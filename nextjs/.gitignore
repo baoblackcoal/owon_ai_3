@@ -37,7 +37,6 @@ next-env.d.ts
 
 # OpenNext
 /.open-next/*
-!/.open-next/worker.js
 
 # wrangler files
 .wrangler

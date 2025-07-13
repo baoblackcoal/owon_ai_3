@@ -19,3 +19,6 @@ pnpm run preview
 // 部署
 pnpm run deploy
 ```
+
+# 常见问题
+- 如果本地网站还处于开启的状态会出现，在执行pnpm run preview 或 pnpm run deploy时会出错，需要终止pnpm run dev 或 pnpm run preview

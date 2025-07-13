@@ -5,6 +5,13 @@
 npx wrangler d1 execute test_d1 --local --file=./src/app/test/d1/schema.sql
 npx wrangler d1 execute test_d1 --local --command="SELECT * FROM Customers"
 
+// 本地，查看所有表
+npx wrangler d1 execute test_d1 --local --command="SELECT name FROM sqlite_master WHERE type='table';"
+// 查看Chat表
+npx wrangler d1 execute test_d1 --local --command="SELECT * FROM Chat"     
+// 查看ChatMessage表
+npx wrangler d1 execute test_d1 --local --command="SELECT * FROM ChatMessage"
+
 // 远程
 npx wrangler d1 execute test_d1 --remote --file=./src/app/test/d1/schema.sql
 npx wrangler d1 execute test_d1 --remote --command="SELECT * FROM Customers"

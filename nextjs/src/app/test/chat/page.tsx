@@ -15,6 +15,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [sessionId, setSessionId] = useState<string>('');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // 自动滚动到底部
@@ -42,7 +43,10 @@ export default function ChatPage() {
       const response = await fetch('/api/test/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: input }),
+        body: JSON.stringify({ 
+          message: input,
+          sessionId: sessionId // 发送当前会话ID
+        }),
       });
 
       if (!response.ok) throw new Error('请求失败');
@@ -50,6 +54,7 @@ export default function ChatPage() {
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
+      let sessionIdPattern = /<session_id>(.*?)<\/session_id>/;
 
       // 更新最后一条消息（AI回复）
       while (true) {
@@ -57,6 +62,14 @@ export default function ChatPage() {
         if (done) break;
 
         const text = decoder.decode(value);
+        
+        // 检查是否包含 session_id
+        const sessionMatch = text.match(sessionIdPattern);
+        if (sessionMatch) {
+          setSessionId(sessionMatch[1]); // 保存新的会话ID
+          continue; // 跳过显示 session_id
+        }
+
         setMessages(prev => {
           const newMessages = [...prev];
           const lastMessage = newMessages[newMessages.length - 1];
@@ -77,8 +90,25 @@ export default function ChatPage() {
     }
   };
 
+  // 清除对话历史
+  const handleClearChat = () => {
+    setMessages([]);
+    setSessionId('');
+  };
+
   return (
     <div className="flex flex-col h-screen max-w-4xl mx-auto p-4">
+      <div className="flex justify-between mb-4">
+        <h1 className="text-2xl font-bold">AI 助手</h1>
+        <Button 
+          onClick={handleClearChat}
+          variant="outline"
+          className="text-red-500 hover:text-red-700"
+        >
+          清除对话
+        </Button>
+      </div>
+
       <Card className="flex-1 mb-4 p-4 overflow-hidden">
         <ScrollArea className="h-[calc(100vh-200px)]" ref={scrollAreaRef}>
           <div className="space-y-4">
@@ -113,7 +143,7 @@ export default function ChatPage() {
           className="flex-1"
         />
         <Button type="submit" disabled={isLoading}>
-          发送
+          {isLoading ? '发送中...' : '发送'}
         </Button>
       </form>
     </div>

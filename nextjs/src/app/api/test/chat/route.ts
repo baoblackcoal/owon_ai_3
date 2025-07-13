@@ -82,6 +82,8 @@ export async function POST(request: Request) {
         // 创建一个可读流来处理响应数据
         const stream = new ReadableStream({
             async start(controller) {
+                let newSessionId = '';
+                
                 // 设置响应数据的处理函数
                 response.data.on('data', (chunk: Buffer) => {
                     const text = chunk.toString();
@@ -96,6 +98,10 @@ export async function POST(request: Request) {
                                     const encoder = new TextEncoder();
                                     controller.enqueue(encoder.encode(jsonData.output.text));
                                 }
+                                // 保存新的 session_id
+                                if (jsonData.output?.session_id) {
+                                    newSessionId = jsonData.output.session_id;
+                                }
                             } catch (e) {
                                 console.error('JSON解析错误:', e);
                             }
@@ -106,6 +112,11 @@ export async function POST(request: Request) {
                 // 处理结束和错误情况
                 response.data.on('end', () => {
                     console.log('流处理完成');
+                    // 在流结束时发送 session_id
+                    if (newSessionId) {
+                        const encoder = new TextEncoder();
+                        controller.enqueue(encoder.encode(`\n<session_id>${newSessionId}</session_id>`));
+                    }
                     controller.close();
                 });
                 response.data.on('error', (err: Error) => {

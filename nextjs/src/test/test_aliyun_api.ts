@@ -1,4 +1,4 @@
-import axios, { AxiosResponse } from 'axios';
+import axios, { AxiosResponse, AxiosError } from 'axios';
 import path from 'path';
 import { Transform, TransformCallback } from 'stream';
 import dotenv from 'dotenv';
@@ -148,9 +148,9 @@ async function callDashScope(): Promise<void> {
         if (error instanceof Error) {
             console.error(`API调用失败: ${error.message}`);
             if ('response' in error && error.response) {
-                const axiosError = error as any;
-                console.error(`状态码: ${axiosError.response.status}`);
-                console.error(`响应数据: ${JSON.stringify(axiosError.response.data, null, 2)}`);
+                const axiosError = error as AxiosError<DashScopeResponse>;
+                console.error(`状态码: ${axiosError.response?.status}`);
+                console.error(`响应数据: ${JSON.stringify(axiosError.response?.data, null, 2)}`);
             }
         }
     }

@@ -1,9 +1,10 @@
-const axios = require('axios');
-const path = require('path');
-const { Transform } = require('stream');
+import axios from 'axios';
+import path from 'path';
+import { Transform } from 'stream';
+import dotenv from 'dotenv';
 
 // 从 src/.env.development.local 获取配置
-require('dotenv').config({ path: path.resolve(__dirname, '../.env.development.local') });
+dotenv.config({ path: path.resolve(__dirname, '../.env.development.local') });
 
 const apiKey = process.env.DASHSCOPE_API_KEY;
 const appId = process.env.DASHSCOPE_APP_ID;

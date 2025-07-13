@@ -54,7 +54,7 @@ export default function ChatPage() {
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      let sessionIdPattern = /<session_id>(.*?)<\/session_id>/;
+      const sessionIdPattern = /<session_id>(.*?)<\/session_id>/;
 
       // 更新最后一条消息（AI回复）
       while (true) {

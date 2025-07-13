@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import axios from 'axios';
 import path from 'path';
 import dotenv from 'dotenv';
 
@@ -66,63 +65,84 @@ export async function POST(request: Request) {
             sessionId
         });
 
-        const response = await axios({
-            method: 'post',
-            url,
-            data,
+        const response = await fetch(url, {
+            method: 'POST',
             headers: {
                 'Authorization': `Bearer ${config.apiKey}`,
                 'Content-Type': 'application/json',
                 'Accept': 'text/event-stream',
                 'X-DashScope-SSE': 'enable'
             },
-            responseType: 'stream'
+            body: JSON.stringify(data)
         });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        if (!response.body) {
+            throw new Error('Response body is null');
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let newSessionId = '';
+        let buffer = ''; // 用于存储不完整的数据
 
         // 创建一个可读流来处理响应数据
         const stream = new ReadableStream({
             async start(controller) {
-                let newSessionId = '';
-                
-                // 设置响应数据的处理函数
-                response.data.on('data', (chunk: Buffer) => {
-                    const text = chunk.toString();
-                    const lines = text.split('\n');
-                    
-                    for (const line of lines) {
-                        if (line.startsWith('data:')) {
-                            try {
-                                const jsonData = JSON.parse(line.slice(5).trim());
-                                if (jsonData.output?.text) {
-                                    // 将文本内容编码为 Uint8Array 并发送
-                                    const encoder = new TextEncoder();
-                                    controller.enqueue(encoder.encode(jsonData.output.text));
+                try {
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        
+                        if (done) {
+                            // 在流结束时发送 session_id
+                            if (newSessionId) {
+                                const encoder = new TextEncoder();
+                                controller.enqueue(encoder.encode(`\n<session_id>${newSessionId}</session_id>`));
+                            }
+                            controller.close();
+                            break;
+                        }
+
+                        const text = decoder.decode(value);
+                        buffer += text;
+                        const lines = buffer.split('\n');
+                        
+                        // 保留最后一行，因为它可能是不完整的
+                        buffer = lines.pop() || '';
+                        
+                        for (const line of lines) {
+                            if (line.startsWith('data:')) {
+                                try {
+                                    const jsonStr = line.slice(5).trim();
+                                    // 检查 JSON 是否完整
+                                    if (jsonStr && 
+                                        jsonStr.startsWith('{') && 
+                                        jsonStr.endsWith('}')) {
+                                        const jsonData = JSON.parse(jsonStr);
+                                        if (jsonData.output?.text) {
+                                            // 将文本内容编码为 Uint8Array 并发送
+                                            const encoder = new TextEncoder();
+                                            controller.enqueue(encoder.encode(jsonData.output.text));
+                                        }
+                                        // 保存新的 session_id
+                                        if (jsonData.output?.session_id) {
+                                            newSessionId = jsonData.output.session_id;
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.error('JSON解析错误:', e);
+                                    // 继续处理下一行，不中断流
                                 }
-                                // 保存新的 session_id
-                                if (jsonData.output?.session_id) {
-                                    newSessionId = jsonData.output.session_id;
-                                }
-                            } catch (e) {
-                                console.error('JSON解析错误:', e);
                             }
                         }
                     }
-                });
-
-                // 处理结束和错误情况
-                response.data.on('end', () => {
-                    console.log('流处理完成');
-                    // 在流结束时发送 session_id
-                    if (newSessionId) {
-                        const encoder = new TextEncoder();
-                        controller.enqueue(encoder.encode(`\n<session_id>${newSessionId}</session_id>`));
-                    }
-                    controller.close();
-                });
-                response.data.on('error', (err: Error) => {
-                    console.error('流处理错误:', err);
-                    controller.error(err);
-                });
+                } catch (error) {
+                    console.error('流处理错误:', error);
+                    controller.error(error);
+                }
             }
         });
 
@@ -136,13 +156,6 @@ export async function POST(request: Request) {
 
     } catch (error) {
         console.error('API调用失败:', error);
-        if (axios.isAxiosError(error)) {
-            console.error('请求详情:', {
-                status: error.response?.status,
-                statusText: error.response?.statusText,
-                data: error.response?.data
-            });
-        }
         return NextResponse.json(
             { error: '处理请求时发生错误' },
             { status: 500 }

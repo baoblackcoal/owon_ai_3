@@ -1,0 +1,63 @@
+# TypeScript 编码规范
+
+## 基本原则
+- 使用严格的 TypeScript 配置，启用所有严格检查
+- 优先使用函数式组件和 React Hooks
+- 遵循 Next.js App Router 最佳实践
+
+## 变量和函数命名
+- **未使用的参数**：使用 `_` 前缀，如 `_request` 或 `_event`
+- **组件名称**：使用 PascalCase，如 `UserProfile`
+- **函数名称**：使用 camelCase，如 `getUserData`
+- **常量**：使用 UPPER_SNAKE_CASE，如 `API_BASE_URL`
+
+## Cloudflare Workers 特定规范
+
+### API 路由处理
+```typescript
+// ✅ 正确：移除未使用的 request 参数或使用 _ 前缀
+export async function GET() {
+  // 或 export async function GET(_request: Request) {
+}
+
+// ❌ 错误：未使用的参数会触发 ESLint 错误
+export async function GET(request: Request) {
+  // request 未使用
+}
+```
+
+### D1 数据库访问
+```typescript
+import { getCloudflareContext } from '@opennextjs/cloudflare';
+
+export async function GET() {
+  const { env } = await getCloudflareContext();
+  const db = (env as unknown as { DB?: D1Database }).DB;
+  
+  if (!db) {
+    return NextResponse.json(
+      { error: 'D1 数据库未绑定' },
+      { status: 500 }
+    );
+  }
+  
+  // 使用 db 进行查询
+}
+```
+
+## 错误处理
+- 总是包装 try-catch 块处理异步操作
+- 为错误提供有意义的中文消息
+- 使用适当的 HTTP 状态码
+
+## 导入顺序
+1. React 相关导入
+2. Next.js 相关导入
+3. 第三方库导入
+4. 本地组件和工具导入
+5. 类型导入（使用 `import type`）
+
+## 注释规范
+- 使用简洁明了的中文注释
+- 为复杂的业务逻辑添加说明
+- API 路由需要注释说明用途和参数

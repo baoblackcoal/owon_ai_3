@@ -1,0 +1,69 @@
+
+# 开发工作流程指南
+
+## 常用开发命令
+
+### 本地开发
+```bash
+# 进入项目目录
+cd nextjs
+
+# 安装依赖
+pnpm i
+
+# 启动开发服务器（无 D1 绑定）
+pnpm dev
+# 访问 http://localhost:3000
+
+# 启动预览服务器（包含 D1 绑定）
+pnpm preview
+```
+
+### 构建和部署
+```bash
+# 生产构建 + 部署到 Cloudflare
+pnpm run deploy
+
+# 仅构建（不部署）
+pnpm build
+```
+
+### 代码质量检查
+```bash
+# ESLint 检查
+pnpm lint
+
+# ESLint 自动修复
+pnpm lint --fix
+
+# TypeScript 类型检查
+pnpm type-check
+```
+
+## Windows 开发注意事项
+
+### 路径长度限制解决方案
+1. **已配置** [.npmrc](mdc:nextjs/.npmrc) 使用 `node-linker=hoisted`
+2. **建议**将项目放在短路径下（如 `D:\proj\`）
+3. **推荐**使用 WSL2 获得更好的开发体验
+
+### 常见问题排查
+- **jest-worker 模块找不到**：删除 `node_modules` 和 `.next`，重新 `pnpm i`
+- **OpenNext edge runtime 错误**：确保 API 路由没有 `export const runtime = 'edge'`
+- **D1 数据库未绑定**：使用 `pnpm preview` 而非 `pnpm dev`
+
+## Git 工作流
+1. 创建功能分支：`git checkout -b feature/your-feature`
+2. 提交代码：使用 Conventional Commits 格式
+3. 推送分支：`git push origin feature/your-feature`
+4. 创建 Pull Request
+
+## 环境配置
+- **开发环境**：`pnpm dev` - Next.js 开发服务器
+- **预览环境**：`pnpm preview` - Wrangler 本地模拟
+- **生产环境**：`pnpm run deploy` - Cloudflare 部署
+
+参考 [README.md](mdc:README.md) 获取完整的开发文档。
+
+
+参考 [README.md](mdc:README.md) 获取完整的开发文档。

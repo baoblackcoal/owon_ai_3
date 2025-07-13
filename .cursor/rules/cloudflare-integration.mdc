@@ -1,0 +1,108 @@
+
+# Cloudflare 集成指南
+
+## 核心组件
+
+### OpenNext
+- 将 Next.js App Router 应用转换为 Cloudflare Workers 兼容格式
+- 配置文件：[open-next.config.ts](mdc:nextjs/open-next.config.ts)
+- 自动处理 Edge Runtime 和服务端渲染
+
+### Wrangler 配置
+主要配置文件：[wrangler.jsonc](mdc:nextjs/wrangler.jsonc)
+
+```json
+{
+  "name": "owon-ai-cloudflare",
+  "account_id": "your-account-id",
+  "compatibility_date": "2024-07-01",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "owon-ai-db",
+      "database_id": "your-database-id"
+    }
+  ]
+}
+```
+
+## D1 数据库集成
+
+### 在 API 路由中使用 D1
+参考示例：[route.ts](mdc:nextjs/src/app/api/test/d1/route.ts)
+
+```typescript
+import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { NextResponse } from 'next/server';
+
+export async function GET() {
+  try {
+    // 获取 Cloudflare 运行时上下文
+    const { env } = await getCloudflareContext();
+    
+    // 获取 D1 数据库实例
+    const db = (env as unknown as { DB?: D1Database }).DB;
+    
+    if (!db) {
+      return NextResponse.json(
+        { error: 'D1 数据库未绑定，请使用 `pnpm preview` 或部署到 Cloudflare' },
+        { status: 500 }
+      );
+    }
+    
+    // 执行数据库查询
+    const { results } = await db.prepare(
+      "SELECT * FROM Customers WHERE CompanyName = ?"
+    )
+      .bind("Bs Beverages")
+      .all();
+    
+    return NextResponse.json(results);
+  } catch (error) {
+    console.error('Database query error:', error);
+    return NextResponse.json(
+      { error: '数据库查询失败' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+### 本地开发注意事项
+- `pnpm dev` - 标准 Next.js 开发，**无 D1 绑定**
+- `pnpm preview` - Wrangler 本地模拟，**包含 D1 绑定**
+
+## 部署流程
+
+### 首次部署配置
+1. 在 Cloudflare Dashboard 创建 D1 数据库
+2. 获取 `database_id` 并更新 `wrangler.jsonc`
+3. 配置环境变量和绑定
+4. 执行 `pnpm run deploy`
+
+### 环境变量管理
+- 开发环境：使用 `.env.local`（Next.js 标准）
+- 生产环境：在 Cloudflare Dashboard 配置
+
+## 常见问题
+
+### Edge Runtime 相关
+- **不要**在 API 路由中使用 `export const runtime = 'edge'`
+- OpenNext 会自动处理 Edge Runtime 配置
+
+### 路径和模块问题
+- 确保使用相对导入路径
+- 避免使用 Node.js 特定的模块（如 `fs`, `path`）
+- 使用 Web API 替代品
+
+### 类型定义
+```typescript
+// 全局类型定义，通常在 env.d.ts 中
+interface CloudflareEnv {
+  DB: D1Database;
+  // 其他环境变量
+}
+```
+
+}
+```

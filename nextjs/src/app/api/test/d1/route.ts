@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 
-export const runtime = 'edge';
-
-export async function GET(request: Request) {
+export async function GET() {
   try {
     // 获取 Cloudflare 运行时上下文中的 D1 数据库实例
     const { env } = await getCloudflareContext();

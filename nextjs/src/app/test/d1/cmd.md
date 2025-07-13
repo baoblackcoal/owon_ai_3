@@ -1,0 +1,2 @@
+- npx wrangler d1 execute test_d1 --local --file=./app/test/d1/schema.sql
+- npx wrangler d1 execute test_d1 --local --command="SELECT * FROM Customers"

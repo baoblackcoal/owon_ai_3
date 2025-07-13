@@ -14,5 +14,15 @@
   "observability": {
     "enabled": true
   },
-  "upload_source_maps": true
+  "upload_source_maps": true,
+
+  
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "test_d1",
+      "database_id": "eea7e024-6b3f-4679-8bf3-64d548a0cb62"
+    }
+  ]
+  
 }

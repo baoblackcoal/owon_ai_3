@@ -2,6 +2,12 @@
 import { spawn } from 'child_process';
 import path from 'path';
 
+import dotenv from 'dotenv';
+
+// 从 src/.env.development.local 获取配置
+dotenv.config({ path: path.resolve(__dirname, '../../.env.development.local') });
+
+
 interface TestConfig {
     name: string;
     description: string;

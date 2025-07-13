@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import ChatSidebar from '@/components/ChatSidebar';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -16,6 +17,7 @@ export default function ChatPage() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string>('');
+  const [currentChatId, setCurrentChatId] = useState<string>('');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // 自动滚动到底部
@@ -45,7 +47,8 @@ export default function ChatPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           message: input,
-          sessionId: sessionId // 发送当前会话ID
+          dashscopeSessionId: sessionId, // 使用正确的参数名
+          chatId: currentChatId // 发送当前聊天ID
         }),
       });
 
@@ -90,24 +93,54 @@ export default function ChatPage() {
     }
   };
 
-  // 清除对话历史
-  const handleClearChat = () => {
+  // 创建新对话
+  const handleNewChat = () => {
     setMessages([]);
     setSessionId('');
+    setCurrentChatId('');
+  };
+
+  // 选择历史对话
+  const handleChatSelect = async (chatId: string) => {
+    try {
+      const response = await fetch(`/api/chat/${chatId}`);
+      if (!response.ok) throw new Error('加载对话失败');
+      
+      const data = await response.json();
+      const { chat, messages: historyMessages } = data as { 
+        chat: { dashscopeSessionId?: string }, 
+        messages: Array<{ userPrompt: string, aiResponse: string }> 
+      };
+      
+      // 转换消息格式
+      const formattedMessages: Message[] = [];
+      historyMessages.forEach((msg) => {
+        formattedMessages.push({ role: 'user', content: msg.userPrompt });
+        formattedMessages.push({ role: 'assistant', content: msg.aiResponse });
+      });
+      
+      setMessages(formattedMessages);
+      setCurrentChatId(chatId);
+      setSessionId(chat.dashscopeSessionId || '');
+    } catch (error) {
+      console.error('加载历史对话失败:', error);
+    }
   };
 
   return (
-    <div className="flex flex-col h-screen max-w-4xl mx-auto p-4">
-      <div className="flex justify-between mb-4">
-        <h1 className="text-2xl font-bold">AI 助手</h1>
-        <Button 
-          onClick={handleClearChat}
-          variant="outline"
-          className="text-red-500 hover:text-red-700"
-        >
-          清除对话
-        </Button>
-      </div>
+    <div className="flex h-screen">
+      {/* 左侧边栏 */}
+      <ChatSidebar 
+        currentChatId={currentChatId}
+        onChatSelect={handleChatSelect}
+        onNewChat={handleNewChat}
+      />
+      
+      {/* 主聊天区域 */}
+      <div className="flex flex-col flex-1 max-w-4xl mx-auto p-4">
+        <div className="mb-4">
+          <h1 className="text-2xl font-bold">AI 助手</h1>
+        </div>
 
       <Card className="flex-1 mb-4 p-4 overflow-hidden">
         <ScrollArea className="h-[calc(100vh-200px)]" ref={scrollAreaRef}>
@@ -134,18 +167,19 @@ export default function ChatPage() {
         </ScrollArea>
       </Card>
 
-      <form onSubmit={handleSubmit} className="flex gap-2">
-        <Input
-          value={input}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
-          placeholder="输入消息..."
-          disabled={isLoading}
-          className="flex-1"
-        />
-        <Button type="submit" disabled={isLoading}>
-          {isLoading ? '发送中...' : '发送'}
-        </Button>
-      </form>
+              <form onSubmit={handleSubmit} className="flex gap-2">
+          <Input
+            value={input}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
+            placeholder="输入消息..."
+            disabled={isLoading}
+            className="flex-1"
+          />
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? '发送中...' : '发送'}
+          </Button>
+        </form>
+      </div>
     </div>
   );
-} 
+}  

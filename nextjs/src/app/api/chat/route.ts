@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import path from 'path';
 import dotenv from 'dotenv';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 
 // --- Configuration ---
 
@@ -46,6 +47,7 @@ interface DashScopeRequest {
 interface ClientRequestBody {
     message: string;
     dashscopeSessionId?: string;
+    chatId?: string;
 }
 
 // --- API Interaction Logic ---
@@ -108,20 +110,111 @@ async function fetchDashScopeStream(requestBody: DashScopeRequest): Promise<Read
     return response.body;
 }
 
+// --- Database Operations ---
+
+/**
+ * Creates a new chat session in the database.
+ * @returns The ID of the newly created chat session.
+ */
+async function createNewChatSession(): Promise<string> {
+    try {
+        const { env } = await getCloudflareContext();
+        const db = (env as unknown as { DB?: D1Database }).DB;
+
+        if (!db) {
+            throw new Error('数据库未绑定');
+        }
+
+        const chatId = crypto.randomUUID();
+        
+        await db.prepare(`
+            INSERT INTO Chat (id, title, createdAt, updatedAt, messageCount)
+            VALUES (?, ?, datetime('now'), datetime('now'), 0)
+        `).bind(chatId, '新对话').run();
+
+        return chatId;
+    } catch (error) {
+        console.error('创建新对话会话失败:', error);
+        throw error;
+    }
+}
+
+/**
+ * Saves a message pair (user prompt and AI response) to the database.
+ * @param chatId The chat session ID.
+ * @param userPrompt The user's input message.
+ * @param aiResponse The AI's response.
+ * @param dashscopeSessionId The DashScope session ID.
+ */
+async function saveMessageToDatabase(
+    chatId: string, 
+    userPrompt: string, 
+    aiResponse: string, 
+    dashscopeSessionId: string
+) {
+    try {
+        const { env } = await getCloudflareContext();
+        const db = (env as unknown as { DB?: D1Database }).DB;
+
+        if (!db) {
+            console.error('数据库未绑定，无法保存消息');
+            return;
+        }
+
+        const messageId = crypto.randomUUID();
+        
+        // 保存消息
+        await db.prepare(`
+            INSERT INTO ChatMessage (id, dashscopeSessionId, chatId, role, userPrompt, aiResponse, timestamp)
+            VALUES (?, ?, ?, 'user', ?, ?, datetime('now'))
+        `).bind(messageId, dashscopeSessionId, chatId, userPrompt, aiResponse).run();
+
+        // 更新对话的最后更新时间和消息数量
+        await db.prepare(`
+            UPDATE Chat 
+            SET updatedAt = datetime('now'), 
+                messageCount = messageCount + 1,
+                dashscopeSessionId = ?
+            WHERE id = ?
+        `).bind(dashscopeSessionId, chatId).run();
+
+        // 如果是第一条消息，生成对话标题
+        const chatInfo = await db.prepare(`
+            SELECT messageCount, title FROM Chat WHERE id = ?
+        `).bind(chatId).first();
+
+        if (chatInfo && chatInfo.messageCount === 1 && chatInfo.title === '新对话') {
+            const title = userPrompt.length > 20 ? userPrompt.substring(0, 20) + '...' : userPrompt;
+            await db.prepare(`
+                UPDATE Chat SET title = ? WHERE id = ?
+            `).bind(title, chatId).run();
+        }
+    } catch (error) {
+        console.error('保存消息到数据库失败:', error);
+    }
+}
+
 // --- Stream Processing Logic ---
 
 /**
  * Processes the Server-Sent Events (SSE) stream from the DashScope API.
  * This function handles parsing the event stream and extracting relevant data.
  * @param responseBody The readable stream from the fetch response.
+ * @param chatId The chat ID for database operations.
+ * @param userPrompt The user's prompt for database storage.
  * @returns A new ReadableStream that outputs processed text and session ID.
  */
-function processSseStream(responseBody: ReadableStream<Uint8Array>): ReadableStream<Uint8Array> {
+function processSseStream(
+    responseBody: ReadableStream<Uint8Array>, 
+    chatId: string, 
+    userPrompt: string
+): ReadableStream<Uint8Array> {
     const reader = responseBody.getReader();
     const decoder = new TextDecoder();
     const encoder = new TextEncoder();
     let buffer = '';
     let newDashscopeSessionId = '';
+    let aiResponse = '';
 
     return new ReadableStream({
         async start(controller) {
@@ -129,6 +222,9 @@ function processSseStream(responseBody: ReadableStream<Uint8Array>): ReadableStr
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) {
+                        // 保存消息到数据库
+                        await saveMessageToDatabase(chatId, userPrompt, aiResponse, newDashscopeSessionId);
+                        
                         // When the stream is finished, append the session ID if available.
                         if (newDashscopeSessionId) {
                             controller.enqueue(encoder.encode(`\n<session_id>${newDashscopeSessionId}</session_id>`));
@@ -152,6 +248,7 @@ function processSseStream(responseBody: ReadableStream<Uint8Array>): ReadableStr
                             if (jsonStr && jsonStr.startsWith('{') && jsonStr.endsWith('}')) {
                                 const jsonData = JSON.parse(jsonStr);
                                 if (jsonData.output?.text) {
+                                    aiResponse += jsonData.output.text;
                                     controller.enqueue(encoder.encode(jsonData.output.text));
                                 }
                                 if (jsonData.output?.session_id) {
@@ -191,23 +288,33 @@ export async function POST(request: Request) {
 
     try {
         // 2. Parse Incoming Request
-        const { message, dashscopeSessionId } = await request.json() as ClientRequestBody;
+        const { message, dashscopeSessionId, chatId } = await request.json() as ClientRequestBody;
         const userPrompt = message;
 
-        // 3. Prepare and Log API Request
+        // 3. Ensure Chat Session Exists
+        let actualChatId: string;
+        if (chatId) {
+            actualChatId = chatId;
+        } else {
+            // 如果没有提供 chatId，创建新的对话
+            actualChatId = await createNewChatSession();
+        }
+
+        // 4. Prepare and Log API Request
         const apiRequestBody = createApiRequestBody(userPrompt, dashscopeSessionId);
         console.log('Sending request to DashScope:', {
             url: dashScopeConfig.apiUrl,
             appId: dashScopeConfig.appId,
             userPrompt,
-            dashscopeSessionId
+            dashscopeSessionId,
+            chatId: actualChatId
         });
 
-        // 4. Fetch and Process Stream
+        // 5. Fetch and Process Stream
         const apiStream = await fetchDashScopeStream(apiRequestBody);
-        const processedStream = processSseStream(apiStream);
+        const processedStream = processSseStream(apiStream, actualChatId, userPrompt);
 
-        // 5. Return Processed Stream to Client
+        // 6. Return Processed Stream to Client
         return new Response(processedStream, {
             headers: {
                 'Content-Type': 'text/event-stream',

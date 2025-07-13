@@ -6,5 +6,5 @@ CREATE TABLE ChatMessage (
     userPrompt TEXT NOT NULL, -- 用户输入内容
     aiResponse TEXT NOT NULL, -- AI回复内容
     previousMessageId TEXT, -- 前一个消息ID
-    timestamp TEXT DEFAULT (strftime('%Y-%m-%d %H:%M:%S', 'now')) NOT NULL, -- 时间戳
+    timestamp TEXT DEFAULT (strftime('%Y-%m-%d %H:%M:%S', 'now')) NOT NULL -- 时间戳
 );

@@ -45,7 +45,7 @@ interface DashScopeRequest {
  */
 interface ClientRequestBody {
     message: string;
-    sessionId?: string;
+    dashscopeSessionId?: string;
 }
 
 // --- API Interaction Logic ---
@@ -54,14 +54,14 @@ interface ClientRequestBody {
  * Creates the request body for the DashScope API call.
  * This function encapsulates the logic for building the request payload.
  * @param message The user's prompt.
- * @param sessionId Optional session ID for conversational context.
+ * @param dashscopeSessionId Optional session ID for conversational context.
  * @returns A fully formed DashScopeRequest object.
  */
-function createApiRequestBody(message: string, sessionId?: string): DashScopeRequest {
+function createApiRequestBody(message: string, dashscopeSessionId?: string): DashScopeRequest {
     return {
         input: {
             prompt: message,
-            ...(sessionId && { session_id: sessionId })
+            ...(dashscopeSessionId && { session_id: dashscopeSessionId })
         },
         parameters: {
             incremental_output: 'true',
@@ -121,7 +121,7 @@ function processSseStream(responseBody: ReadableStream<Uint8Array>): ReadableStr
     const decoder = new TextDecoder();
     const encoder = new TextEncoder();
     let buffer = '';
-    let newSessionId = '';
+    let newDashscopeSessionId = '';
 
     return new ReadableStream({
         async start(controller) {
@@ -130,8 +130,8 @@ function processSseStream(responseBody: ReadableStream<Uint8Array>): ReadableStr
                     const { done, value } = await reader.read();
                     if (done) {
                         // When the stream is finished, append the session ID if available.
-                        if (newSessionId) {
-                            controller.enqueue(encoder.encode(`\n<session_id>${newSessionId}</session_id>`));
+                        if (newDashscopeSessionId) {
+                            controller.enqueue(encoder.encode(`\n<session_id>${newDashscopeSessionId}</session_id>`));
                         }
                         controller.close();
                         break;
@@ -155,7 +155,7 @@ function processSseStream(responseBody: ReadableStream<Uint8Array>): ReadableStr
                                     controller.enqueue(encoder.encode(jsonData.output.text));
                                 }
                                 if (jsonData.output?.session_id) {
-                                    newSessionId = jsonData.output.session_id;
+                                    newDashscopeSessionId = jsonData.output.session_id;
                                 }
                             }
                         } catch (e) {
@@ -191,15 +191,16 @@ export async function POST(request: Request) {
 
     try {
         // 2. Parse Incoming Request
-        const { message, sessionId } = await request.json() as ClientRequestBody;
+        const { message, dashscopeSessionId } = await request.json() as ClientRequestBody;
+        const userPrompt = message;
 
         // 3. Prepare and Log API Request
-        const apiRequestBody = createApiRequestBody(message, sessionId);
+        const apiRequestBody = createApiRequestBody(userPrompt, dashscopeSessionId);
         console.log('Sending request to DashScope:', {
             url: dashScopeConfig.apiUrl,
             appId: dashScopeConfig.appId,
-            message,
-            sessionId
+            userPrompt,
+            dashscopeSessionId
         });
 
         // 4. Fetch and Process Stream

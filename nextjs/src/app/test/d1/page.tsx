@@ -7,6 +7,7 @@ interface Customer {
   CustomerID: number;
   CompanyName: string;
   ContactName: string;
+  Age: number;
 }
 
 // 定义错误响应类型
@@ -52,13 +53,14 @@ export default function D1TestPage() {
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4">Bs Beverages 客户列表</h1>
       <div className="grid gap-4">
-        {customers.map((customer) => (
+        {customers.map((customer: Customer) => (
           <div
             key={customer.CustomerID}
             className="border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
           >
             <h2 className="text-xl font-semibold">{customer.ContactName}</h2>
             <p className="text-gray-600">{customer.CompanyName}</p>
+            <p className="text-gray-500">年龄: {customer.Age}岁</p>
           </div>
         ))}
       </div>

@@ -3,8 +3,7 @@ import path from 'path';
 import { Transform, TransformCallback } from 'stream';
 import dotenv from 'dotenv';
 
-// 从 src/.env.development.local 获取配置
-dotenv.config({ path: path.resolve(__dirname, '../.env.development.local') });
+dotenv.config({ path: path.resolve(__dirname, '../../.env.development.local') });
 
 interface DashScopeConfig {
     apiKey: string;

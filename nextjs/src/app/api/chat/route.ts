@@ -128,9 +128,9 @@ async function createNewChatSession(): Promise<string> {
         const chatId = crypto.randomUUID();
         
         await db.prepare(`
-            INSERT INTO Chat (id, title, createdAt, updatedAt, messageCount)
-            VALUES (?, ?, datetime('now'), datetime('now'), 0)
-        `).bind(chatId, '新对话').run();
+            INSERT INTO Chat (id, chatId, title, createdAt, updatedAt, messageCount)
+            VALUES (?, ?, ?, datetime('now'), datetime('now'), 0)
+        `).bind(chatId, chatId, '新对话').run();
 
         return chatId;
     } catch (error) {
@@ -161,15 +161,21 @@ async function saveMessageToDatabase(
             return;
         }
 
+        // 获取当前聊天的消息数量，用作messageIndex
+        const chatInfo = await db.prepare(`
+            SELECT messageCount FROM Chat WHERE id = ?
+        `).bind(chatId).first();
+
+        const messageIndex = chatInfo ? chatInfo.messageCount : 0;
         const messageId = crypto.randomUUID();
         
         // 保存消息
         await db.prepare(`
-            INSERT INTO ChatMessage (id, dashscopeSessionId, chatId, role, userPrompt, aiResponse, timestamp)
+            INSERT INTO ChatMessage (id, chatId, messageIndex, role, userPrompt, aiResponse, timestamp)
             VALUES (?, ?, ?, 'user', ?, ?, datetime('now'))
-        `).bind(messageId, dashscopeSessionId, chatId, userPrompt, aiResponse).run();
+        `).bind(messageId, chatId, messageIndex, userPrompt, aiResponse).run();
 
-        // 更新对话的最后更新时间和消息数量
+        // 更新对话的最后更新时间、消息数量和dashscopeSessionId
         await db.prepare(`
             UPDATE Chat 
             SET updatedAt = datetime('now'), 
@@ -179,11 +185,7 @@ async function saveMessageToDatabase(
         `).bind(dashscopeSessionId, chatId).run();
 
         // 如果是第一条消息，生成对话标题
-        const chatInfo = await db.prepare(`
-            SELECT messageCount, title FROM Chat WHERE id = ?
-        `).bind(chatId).first();
-
-        if (chatInfo && chatInfo.messageCount === 1 && chatInfo.title === '新对话') {
+        if (messageIndex === 0) {
             const title = userPrompt.length > 20 ? userPrompt.substring(0, 20) + '...' : userPrompt;
             await db.prepare(`
                 UPDATE Chat SET title = ? WHERE id = ?
@@ -225,10 +227,12 @@ function processSseStream(
                         // 保存消息到数据库
                         await saveMessageToDatabase(chatId, userPrompt, aiResponse, newDashscopeSessionId);
                         
-                        // When the stream is finished, append the session ID if available.
+                        // When the stream is finished, append the session ID and chat ID if available.
                         if (newDashscopeSessionId) {
                             controller.enqueue(encoder.encode(`\n<session_id>${newDashscopeSessionId}</session_id>`));
                         }
+                        // Always send chatId to frontend
+                        controller.enqueue(encoder.encode(`\n<chat_id>${chatId}</chat_id>`));
                         controller.close();
                         break;
                     }

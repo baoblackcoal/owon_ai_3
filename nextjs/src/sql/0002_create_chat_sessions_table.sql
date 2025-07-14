@@ -1,5 +1,6 @@
 CREATE TABLE Chat (
     id TEXT PRIMARY KEY NOT NULL, -- 聊天会话ID
+    chatId TEXT UNIQUE, -- 聊天ID, 用于关联聊天记录, 关联Chat表的id
     dashscopeSessionId TEXT UNIQUE, -- DashScope会话ID
     title TEXT NOT NULL, -- 对话标题（根据第一条消息生成）
     createdAt TEXT DEFAULT (strftime('%Y-%m-%d %H:%M:%S', 'now')) NOT NULL, -- 创建时间
@@ -9,4 +10,5 @@ CREATE TABLE Chat (
 
 -- 创建索引以优化查询性能
 CREATE INDEX idx_chat_updated_at ON Chat(updatedAt DESC);
-CREATE INDEX idx_chat_dashscope_session_id ON Chat(dashscopeSessionId); 
+CREATE INDEX idx_chat_dashscope_session_id ON Chat(dashscopeSessionId);
+CREATE INDEX idx_chat_chat_id ON Chat(chatId); 

@@ -16,7 +16,6 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [sessionId, setSessionId] = useState<string>('');
   const [currentChatId, setCurrentChatId] = useState<string>('');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
@@ -47,7 +46,6 @@ export default function ChatPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           message: input,
-          dashscopeSessionId: sessionId, // 使用正确的参数名
           chatId: currentChatId // 发送当前聊天ID
         }),
       });
@@ -57,7 +55,6 @@ export default function ChatPage() {
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      const sessionIdPattern = /<session_id>(.*?)<\/session_id>/;
 
       // 更新最后一条消息（AI回复）
       while (true) {
@@ -66,11 +63,17 @@ export default function ChatPage() {
 
         const text = decoder.decode(value);
         
-        // 检查是否包含 session_id
-        const sessionMatch = text.match(sessionIdPattern);
-        if (sessionMatch) {
-          setSessionId(sessionMatch[1]); // 保存新的会话ID
-          continue; // 跳过显示 session_id
+        // 检查是否包含 chat_id
+        const chatIdPattern = /<chat_id>(.*?)<\/chat_id>/;
+        const chatMatch = text.match(chatIdPattern);
+        if (chatMatch) {
+          setCurrentChatId(chatMatch[1]); // 保存新的聊天ID
+          continue; // 跳过显示 chat_id
+        }
+        
+        // 跳过 session_id 标签
+        if (text.includes('<session_id>') || text.includes('</session_id>')) {
+          continue;
         }
 
         setMessages(prev => {
@@ -96,7 +99,6 @@ export default function ChatPage() {
   // 创建新对话
   const handleNewChat = () => {
     setMessages([]);
-    setSessionId('');
     setCurrentChatId('');
   };
 
@@ -107,8 +109,7 @@ export default function ChatPage() {
       if (!response.ok) throw new Error('加载对话失败');
       
       const data = await response.json();
-      const { chat, messages: historyMessages } = data as { 
-        chat: { dashscopeSessionId?: string }, 
+      const { messages: historyMessages } = data as { 
         messages: Array<{ userPrompt: string, aiResponse: string }> 
       };
       
@@ -121,7 +122,6 @@ export default function ChatPage() {
       
       setMessages(formattedMessages);
       setCurrentChatId(chatId);
-      setSessionId(chat.dashscopeSessionId || '');
     } catch (error) {
       console.error('加载历史对话失败:', error);
     }

@@ -1,6 +1,12 @@
 # TODO
 - 将聊天信息保存到数据库
 
+## TMP_TODO
+- ChatMessage表
+    - previousMessageId没有保存到数据库
+    - chatId与dashscopeSessionId需要互换
+- chat表dashscopeSessionId需要改成chatId
+
 # 上线最小MVP V1.0.0
 - 聊天页面
 - 多机型知识库，做到数据库

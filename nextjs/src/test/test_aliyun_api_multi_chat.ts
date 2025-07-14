@@ -98,9 +98,13 @@ class SSETransformer extends Transform {
     }
 }
 
+// const config: DashScopeConfig = {
+//     apiKey: process.env.DASHSCOPE_API_KEY || '',
+//     appId: process.env.DASHSCOPE_APP_ID || ''
+// };
 const config: DashScopeConfig = {
-    apiKey: process.env.DASHSCOPE_API_KEY || '',
-    appId: process.env.DASHSCOPE_APP_ID || ''
+    apiKey: 'sk-9564c5b5483140449ec1128f133243c5',
+    appId: '873f00fbc13048f4985d88b955f27de6'
 };
 
 if (!config.apiKey || !config.appId) {
@@ -148,6 +152,7 @@ async function callDashScope(prompt: string, sessionId?: string): Promise<string
 
         return new Promise((resolve, reject) => {
             if (response.status === 200) {
+                // console.log('response.data: ', response.data);
                 const sseTransformer = new SSETransformer();
                 let newSessionId = '';
 
@@ -248,6 +253,7 @@ function showHelp(): void {
     console.log('  运行示波器场景：');
     console.log('    npx ts-node test_aliyun_api_multi_chat.ts -s oscilloscope');
     console.log('  运行自定义对话：');
+    console.log('    npx ts-node test_aliyun_api_multi_chat.ts -m "ADS800A外观不错，请记住" -m "我刚才说了什么？"');
     console.log('    npx ts-node test_aliyun_api_multi_chat.ts -m "ADS800A外观不错，请记住" -m "ADS800A有解码功能，请记住" -m "我刚才说了什么？"');
     console.log('');
 }

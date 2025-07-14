@@ -4,7 +4,7 @@
 		{
 			"label": "tsc-watch",
 			"type": "shell",
-			"command": "cd nextjs/src/test ; tsc -p tsconfig.json --watch",
+			"command": "cd nextjs\\src\\test; if (-not (Test-Path dist)) { mkdir dist }; tsc -p tsconfig.json --watch",
 			"group": {
 				"kind": "build",
 				"isDefault": true
@@ -20,4 +20,4 @@
 			}
 		}
 	]
-  }
+}

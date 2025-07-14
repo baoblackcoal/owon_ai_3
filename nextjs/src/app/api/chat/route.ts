@@ -128,9 +128,9 @@ async function createNewChatSession(): Promise<string> {
         const chatId = crypto.randomUUID();
         
         await db.prepare(`
-            INSERT INTO Chat (id, chatId, title, createdAt, updatedAt, messageCount)
-            VALUES (?, ?, ?, datetime('now'), datetime('now'), 0)
-        `).bind(chatId, chatId, '新对话').run();
+            INSERT INTO Chat (id, title, createdAt, updatedAt, messageCount)
+            VALUES (?, ?, datetime('now'), datetime('now'), 0)
+        `).bind(chatId, '新对话').run();
 
         return chatId;
     } catch (error) {
@@ -163,30 +163,20 @@ async function saveMessageToDatabase(
 
         const messageId = crypto.randomUUID();
         
-        // 获取前一个DashScope会话ID
-        const previousMessage = await db.prepare(`
-            SELECT dashscopeSessionId FROM ChatMessage 
-            WHERE chatId = ? 
-            ORDER BY timestamp DESC 
-            LIMIT 1
-        `).bind(chatId).first();
-        
-        const previousDashscopeSessionId = previousMessage?.dashscopeSessionId || null;
-        
         // 保存消息
         await db.prepare(`
-            INSERT INTO ChatMessage (id, chatId, dashscopeSessionId, role, userPrompt, aiResponse, previousDashscopeSessionId, timestamp)
-            VALUES (?, ?, ?, 'user', ?, ?, ?, datetime('now'))
-        `).bind(messageId, chatId, dashscopeSessionId, userPrompt, aiResponse, previousDashscopeSessionId).run();
+            INSERT INTO ChatMessage (id, dashscopeSessionId, chatId, role, userPrompt, aiResponse, timestamp)
+            VALUES (?, ?, ?, 'user', ?, ?, datetime('now'))
+        `).bind(messageId, dashscopeSessionId, chatId, userPrompt, aiResponse).run();
 
         // 更新对话的最后更新时间和消息数量
         await db.prepare(`
             UPDATE Chat 
             SET updatedAt = datetime('now'), 
                 messageCount = messageCount + 1,
-                chatId = ?
+                dashscopeSessionId = ?
             WHERE id = ?
-        `).bind(chatId, chatId).run();
+        `).bind(dashscopeSessionId, chatId).run();
 
         // 如果是第一条消息，生成对话标题
         const chatInfo = await db.prepare(`
@@ -232,8 +222,6 @@ function processSseStream(
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) {
-                        console.log('newDashscopeSessionId: ', newDashscopeSessionId);
-                        
                         // 保存消息到数据库
                         await saveMessageToDatabase(chatId, userPrompt, aiResponse, newDashscopeSessionId);
                         
@@ -314,7 +302,7 @@ export async function POST(request: Request) {
 
         // 4. Prepare and Log API Request
         const apiRequestBody = createApiRequestBody(userPrompt, dashscopeSessionId);
-        console.log('Sending request to DashScope1:', {
+        console.log('Sending request to DashScope:', {
             url: dashScopeConfig.apiUrl,
             appId: dashScopeConfig.appId,
             userPrompt,

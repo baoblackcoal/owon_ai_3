@@ -47,8 +47,8 @@ export default function ChatPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           message: input,
-          dashscopeSessionId: sessionId, // DashScope会话ID
-          chatId: currentChatId // 聊天ID
+          dashscopeSessionId: sessionId, // 使用正确的参数名
+          chatId: currentChatId // 发送当前聊天ID
         }),
       });
 
@@ -68,10 +68,9 @@ export default function ChatPage() {
         
         // 检查是否包含 session_id
         const sessionMatch = text.match(sessionIdPattern);
-        console.log('sessionMatch: ', sessionMatch);
         if (sessionMatch) {
           setSessionId(sessionMatch[1]); // 保存新的会话ID
-          // continue; // 跳过显示 session_id
+          continue; // 跳过显示 session_id
         }
 
         setMessages(prev => {
@@ -108,25 +107,21 @@ export default function ChatPage() {
       if (!response.ok) throw new Error('加载对话失败');
       
       const data = await response.json();
-      const { messages: historyMessages } = data as { 
-        chat: { chatId?: string }, 
-        messages: Array<{ userPrompt: string, aiResponse: string, dashscopeSessionId?: string }> 
+      const { chat, messages: historyMessages } = data as { 
+        chat: { dashscopeSessionId?: string }, 
+        messages: Array<{ userPrompt: string, aiResponse: string }> 
       };
       
       // 转换消息格式
       const formattedMessages: Message[] = [];
-      let lastDashscopeSessionId = '';
       historyMessages.forEach((msg) => {
         formattedMessages.push({ role: 'user', content: msg.userPrompt });
         formattedMessages.push({ role: 'assistant', content: msg.aiResponse });
-        if (msg.dashscopeSessionId) {
-          lastDashscopeSessionId = msg.dashscopeSessionId;
-        }
       });
       
       setMessages(formattedMessages);
       setCurrentChatId(chatId);
-      setSessionId(lastDashscopeSessionId);
+      setSessionId(chat.dashscopeSessionId || '');
     } catch (error) {
       console.error('加载历史对话失败:', error);
     }

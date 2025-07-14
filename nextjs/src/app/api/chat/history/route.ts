@@ -44,13 +44,13 @@ export async function POST(request: Request) {
             );
         }
 
-        const { title } = await request.json() as { title?: string };
+        const { title } = await request.json();
         const chatId = crypto.randomUUID();
 
         await db.prepare(`
-            INSERT INTO Chat (id, chatId, title, createdAt, updatedAt, messageCount)
-            VALUES (?, ?, ?, datetime('now'), datetime('now'), 0)
-        `).bind(chatId, chatId, title || '新对话').run();
+            INSERT INTO Chat (id, title, createdAt, updatedAt, messageCount)
+            VALUES (?, ?, datetime('now'), datetime('now'), 0)
+        `).bind(chatId, title || '新对话').run();
 
         return NextResponse.json({ id: chatId, title: title || '新对话' });
     } catch (error) {

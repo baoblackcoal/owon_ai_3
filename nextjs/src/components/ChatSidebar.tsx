@@ -28,7 +28,7 @@ export default function ChatSidebar({ currentChatId, onChatSelect, onNewChat }: 
     try {
       const response = await fetch('/api/chat/history');
       if (response.ok) {
-        const sessions = await response.json();
+        const sessions = await response.json() as ChatSession[];
         setChatSessions(sessions);
       }
     } catch (error) {

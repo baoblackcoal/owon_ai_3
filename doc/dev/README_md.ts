@@ -17,6 +17,10 @@ npx wrangler d1 execute test_d1 --local --command="SELECT * FROM Chat"
 npx wrangler d1 execute test_d1 --local --command="SELECT * FROM ChatMessage"
 
 // ------- 远程 -------
+// 删除ChatMessage和Chat表，并重新创建
+cd nextjs ; npx  wrangler d1 execute DB  --remote --command "DROP TABLE IF EXISTS ChatMessage; DROP TABLE IF EXISTS Chat;" ; npx wrangler d1 execute DB --remote --file ./src/sql/0001_create_messages_table.sql ; npx  wrangler d1 execute DB --remote --file ./src/sql/0002_create_chat_sessions_table.sql
+
+
 npx wrangler d1 execute test_d1 --remote --file=./src/app/test/d1/schema.sql
 npx wrangler d1 execute test_d1 --remote --command="SELECT * FROM Customers"
 ```

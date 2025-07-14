@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 
 // 获取历史对话列表
@@ -31,8 +31,12 @@ export async function GET() {
     }
 }
 
+interface CreateChatRequest {
+    title?: string;
+}
+
 // 创建新对话
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
     try {
         const { env } = await getCloudflareContext();
         const db = (env as unknown as { DB?: D1Database }).DB;
@@ -44,7 +48,7 @@ export async function POST(request: Request) {
             );
         }
 
-        const { title } = await request.json();
+        const { title } = await request.json() as CreateChatRequest;
         const chatId = crypto.randomUUID();
 
         await db.prepare(`

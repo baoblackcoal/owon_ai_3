@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  typescript: {
+    ignoreBuildErrors: false,  // 确保构建时不忽略类型错误
+    tsconfigPath: "tsconfig.json"  // 使用项目的 tsconfig
+  }
 };
 
 export default nextConfig;

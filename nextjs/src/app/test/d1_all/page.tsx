@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,8 +17,12 @@ interface ColumnInfo {
 }
 
 interface TableData {
-  data: any[];
+  data: Record<string, unknown>[];
   total: number;
+}
+
+interface RowData {
+  [key: string]: string | number;
 }
 
 export default function D1AllPage() {
@@ -32,15 +36,15 @@ export default function D1AllPage() {
   const [pageSize] = useState(10);
   const [searchColumn, setSearchColumn] = useState<string>('');
   const [searchValue, setSearchValue] = useState<string>('');
-  const [editingRow, setEditingRow] = useState<any | null>(null);
-  const [newRow, setNewRow] = useState<any | null>(null);
+  const [editingRow, setEditingRow] = useState<RowData | null>(null);
+  const [newRow, setNewRow] = useState<RowData | null>(null);
 
   // 获取所有表
-  const fetchTables = async () => {
+  const fetchTables = useCallback(async () => {
     try {
       const response = await fetch('/api/test/d1_all?action=getTables');
       if (!response.ok) throw new Error('获取表列表失败');
-      const data = await response.json();
+      const data = await response.json() as TableInfo[];
       setTables(data);
       if (data.length > 0 && !selectedTable) {
         setSelectedTable(data[0].name);
@@ -48,22 +52,22 @@ export default function D1AllPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : '获取表列表失败');
     }
-  };
+  }, [selectedTable]);
 
   // 获取表结构
-  const fetchSchema = async (tableName: string) => {
+  const fetchSchema = useCallback(async (tableName: string) => {
     try {
       const response = await fetch(`/api/test/d1_all?action=getSchema&table=${tableName}`);
       if (!response.ok) throw new Error('获取表结构失败');
-      const data = await response.json();
+      const data = await response.json() as ColumnInfo[];
       setSchema(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : '获取表结构失败');
     }
-  };
+  }, []);
 
   // 获取表数据
-  const fetchTableData = async () => {
+  const fetchTableData = useCallback(async () => {
     try {
       const url = new URL('/api/test/d1_all', window.location.origin);
       url.searchParams.set('action', 'getData');
@@ -77,12 +81,12 @@ export default function D1AllPage() {
 
       const response = await fetch(url);
       if (!response.ok) throw new Error('获取表数据失败');
-      const data = await response.json();
+      const data = await response.json() as TableData;
       setTableData(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : '获取表数据失败');
     }
-  };
+  }, [selectedTable, page, pageSize, searchColumn, searchValue]);
 
   // 处理表选择
   const handleTableSelect = async (tableName: string) => {
@@ -102,7 +106,7 @@ export default function D1AllPage() {
 
   // 处理新增行
   const handleAddRow = () => {
-    const newRowData = {};
+    const newRowData: RowData = {};
     schema.forEach(col => {
       newRowData[col.name] = '';
     });
@@ -111,6 +115,8 @@ export default function D1AllPage() {
 
   // 处理保存新行
   const handleSaveNewRow = async () => {
+    if (!newRow) return;
+    
     try {
       const response = await fetch('/api/test/d1_all', {
         method: 'POST',
@@ -131,12 +137,14 @@ export default function D1AllPage() {
   };
 
   // 处理编辑行
-  const handleEditRow = (row: any) => {
+  const handleEditRow = (row: RowData) => {
     setEditingRow({ ...row });
   };
 
   // 处理保存编辑
   const handleSaveEdit = async () => {
+    if (!editingRow) return;
+    
     try {
       const response = await fetch('/api/test/d1_all', {
         method: 'POST',
@@ -180,7 +188,7 @@ export default function D1AllPage() {
 
   useEffect(() => {
     fetchTables();
-  }, []);
+  }, [fetchTables]);
 
   useEffect(() => {
     if (selectedTable) {
@@ -190,7 +198,7 @@ export default function D1AllPage() {
         fetchTableData()
       ]).finally(() => setLoading(false));
     }
-  }, [selectedTable, page]);
+  }, [selectedTable, fetchSchema, fetchTableData]);
 
   if (loading && !tables.length) {
     return <div className="p-4">加载中...</div>;
@@ -256,14 +264,13 @@ export default function D1AllPage() {
 
           {/* 新增行表单 */}
           {newRow && (
-            <Card className="p-4 bg-gray-50">
-              <h3 className="font-bold mb-2">新增记录</h3>
-              <div className="grid gap-2">
+            <Card className="p-4 mb-4">
+              <div className="space-y-4">
                 {schema.map((col) => (
                   <div key={col.name} className="flex items-center gap-2">
                     <span className="w-24">{col.name}:</span>
                     <Input
-                      value={newRow[col.name]}
+                      value={String(newRow[col.name] || '')}
                       onChange={(e) => setNewRow({
                         ...newRow,
                         [col.name]: e.target.value
@@ -271,10 +278,12 @@ export default function D1AllPage() {
                     />
                   </div>
                 ))}
-                <div className="flex gap-2 mt-2">
-                  <Button onClick={handleSaveNewRow}>保存</Button>
-                  <Button variant="outline" onClick={() => setNewRow(null)}>
+                <div className="flex justify-end gap-2">
+                  <Button onClick={() => setNewRow(null)} variant="outline">
                     取消
+                  </Button>
+                  <Button onClick={handleSaveNewRow}>
+                    保存
                   </Button>
                 </div>
               </div>
@@ -282,96 +291,98 @@ export default function D1AllPage() {
           )}
 
           {/* 数据表格 */}
-          <Card className="p-4 overflow-x-auto">
-            <table className="min-w-full">
-              <thead>
-                <tr className="bg-gray-50">
-                  {schema.map((col) => (
-                    <th key={col.name} className="px-4 py-2 text-left">
-                      {col.name}
-                      {col.pk === 1 && ' (PK)'}
-                    </th>
-                  ))}
-                  <th className="px-4 py-2">操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tableData.data.map((row, index) => (
-                  <tr key={index} className="border-t">
+          <Card className="overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-muted">
                     {schema.map((col) => (
-                      <td key={col.name} className="px-4 py-2">
-                        {editingRow && editingRow.id === row.id ? (
-                          <Input
-                            value={editingRow[col.name]}
-                            onChange={(e) => setEditingRow({
-                              ...editingRow,
-                              [col.name]: e.target.value
-                            })}
-                          />
+                      <th key={col.name} className="px-4 py-2 text-left">
+                        {col.name}
+                      </th>
+                    ))}
+                    <th className="px-4 py-2 text-right">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tableData.data.map((row, index) => (
+                    <tr key={index} className="border-t">
+                      {schema.map((col) => (
+                        <td key={col.name} className="px-4 py-2">
+                          {editingRow && (row as RowData).id === editingRow.id ? (
+                            <Input
+                              value={String(editingRow[col.name] || '')}
+                              onChange={(e) => setEditingRow({
+                                ...editingRow,
+                                [col.name]: e.target.value
+                              })}
+                            />
+                          ) : (
+                            String((row as RowData)[col.name] || '')
+                          )}
+                        </td>
+                      ))}
+                      <td className="px-4 py-2 text-right">
+                        {editingRow && (row as RowData).id === editingRow.id ? (
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              onClick={() => setEditingRow(null)}
+                              variant="outline"
+                              size="sm"
+                            >
+                              取消
+                            </Button>
+                            <Button
+                              onClick={handleSaveEdit}
+                              size="sm"
+                            >
+                              保存
+                            </Button>
+                          </div>
                         ) : (
-                          row[col.name]
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              onClick={() => handleEditRow(row as RowData)}
+                              variant="outline"
+                              size="sm"
+                            >
+                              编辑
+                            </Button>
+                            <Button
+                              onClick={() => handleDeleteRow((row as RowData).id as number)}
+                              variant="outline"
+                              size="sm"
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              删除
+                            </Button>
+                          </div>
                         )}
                       </td>
-                    ))}
-                    <td className="px-4 py-2">
-                      {editingRow && editingRow.id === row.id ? (
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={handleSaveEdit}>
-                            保存
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setEditingRow(null)}
-                          >
-                            取消
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEditRow(row)}
-                          >
-                            编辑
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDeleteRow(row.id)}
-                          >
-                            删除
-                          </Button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </Card>
 
           {/* 分页 */}
-          <div className="flex justify-between items-center">
-            <div>
-              总计: {tableData.total} 条记录
+          <div className="flex justify-between items-center mt-4">
+            <div className="text-sm text-muted-foreground">
+              共 {tableData.total} 条记录
             </div>
             <div className="flex gap-2">
               <Button
-                variant="outline"
-                disabled={page === 1}
                 onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                variant="outline"
               >
                 上一页
               </Button>
-              <span className="px-4 py-2">
-                第 {page} 页
-              </span>
               <Button
-                variant="outline"
-                disabled={page * pageSize >= tableData.total}
                 onClick={() => setPage(p => p + 1)}
+                disabled={page * pageSize >= tableData.total}
+                variant="outline"
               >
                 下一页
               </Button>

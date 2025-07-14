@@ -1,4 +1,3 @@
-
 # 开发环境
 - 操作系统：Windows 11
 - 终端：Windows PowerShell
@@ -28,6 +27,19 @@
 - 使用 Tailwind CSS 进行样式开发
 - 编写的代码需要符合Cloudflare Workers的开发规范，因为需要部署到Cloudflare Workers
 
+# 类型检查和构建规范
+- 在开发环境和生产环境保持相同的类型检查标准
+- 定期运行 pnpm run check 进行类型检查
+- 提交代码前必须确保通过类型检查
+- 禁止使用 // @ts-ignore 或 // @ts-nocheck 跳过类型检查
+- 确保 next.config.ts 中的 typescript.ignoreBuildErrors 设置为 false
+- 使用 VS Code 或其他 IDE 的实时类型检查功能
+- 新增的代码必须有完整的类型定义，禁止使用 any 类型
+- 开发时必须处理所有的类型错误，不能等到构建时才修复
+- 每次修改代码后要运行 pnpm run check 确保类型正确
+- 使用 IDE 的类型检查插件进行实时类型检查
+- 确保 tsconfig.json 中的 strict 模式保持启用
+
 # 测试
 - 使用 Playwright MCP 测试页面（不需要写测试代码）
 - 使用 npx wrangler d1 命令行工具测试数据库
@@ -36,4 +48,5 @@
 - pnpm dev 需要开发人员手动启动，因为开发人员有可能已经启动过
 - 开发环境是在windows11，终端是PowerShell，使用多命令的时候需要使用分号连接
 - 不要在根目录中增加package.json， package.json在src目录下
-
+- 在开发过程中必须及时修复类型错误，不能等到构建时才处理
+- 每次代码提交前都要运行 pnpm run check 确保类型正确

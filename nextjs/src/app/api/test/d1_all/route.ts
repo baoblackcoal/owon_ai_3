@@ -1,8 +1,24 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 
+interface TableInfo {
+  name: string;
+}
+
+interface ColumnInfo {
+  name: string;
+  type: string;
+  notnull: number;
+  pk: number;
+}
+
+interface TableData {
+  data: Record<string, unknown>[];
+  total: number;
+}
+
 // 获取所有表名
-async function getTables(db: D1Database) {
+async function getTables(db: D1Database): Promise<TableInfo[]> {
   const { results } = await db
     .prepare(
       `SELECT name FROM sqlite_master 
@@ -11,15 +27,20 @@ async function getTables(db: D1Database) {
        ORDER BY name`
     )
     .all();
-  return results as { name: string }[];
+  return (results as unknown[]).map(row => ({ name: (row as { name: string }).name }));
 }
 
 // 获取表结构
-async function getTableSchema(db: D1Database, tableName: string) {
+async function getTableSchema(db: D1Database, tableName: string): Promise<ColumnInfo[]> {
   const { results } = await db
     .prepare(`PRAGMA table_info(${tableName})`)
     .all();
-  return results;
+  return (results as unknown[]).map(row => ({
+    name: (row as { name: string }).name,
+    type: (row as { type: string }).type,
+    notnull: (row as { notnull: number }).notnull,
+    pk: (row as { pk: number }).pk
+  }));
 }
 
 // 获取表数据
@@ -30,7 +51,7 @@ async function getTableData(
   pageSize = 10,
   searchColumn?: string,
   searchValue?: string,
-) {
+): Promise<TableData> {
   const offset = (page - 1) * pageSize;
   let query = `SELECT * FROM ${tableName}`;
   let countQuery = `SELECT COUNT(*) as total FROM ${tableName}`;
@@ -57,12 +78,12 @@ async function getTableData(
   ]);
 
   return {
-    data: dataResult.results,
+    data: dataResult.results as Record<string, unknown>[],
     total: (countResult.results[0] as { total: number }).total
   };
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     const { env } = await getCloudflareContext();
     const db = (env as unknown as { DB?: D1Database }).DB;
@@ -113,7 +134,13 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
+interface DatabaseRequest {
+  table: string;
+  action: 'insert' | 'update' | 'delete';
+  data: Record<string, unknown>;
+}
+
+export async function POST(request: NextRequest) {
   try {
     const { env } = await getCloudflareContext();
     const db = (env as unknown as { DB?: D1Database }).DB;
@@ -125,7 +152,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { table, action, data } = await request.json();
+    const { table, action, data } = await request.json() as DatabaseRequest;
 
     if (!table || !action) {
       return NextResponse.json({ error: '缺少必要参数' }, { status: 400 });

@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 
 // 获取特定对话的消息历史
 export async function GET(
-    request: Request,
-    { params }: { params: { chatId: string } }
+    request: NextRequest,
+    { params }: { params: Promise<{ chatId: string }> }
 ) {
     try {
         const { env } = await getCloudflareContext();
@@ -17,8 +17,7 @@ export async function GET(
             );
         }
 
-        const resolvedParams = await params;
-        const { chatId } = resolvedParams;
+        const { chatId } = await params;
 
         // 获取对话信息
         const chatResult = await db.prepare(`
@@ -57,8 +56,8 @@ export async function GET(
 
 // 删除特定对话
 export async function DELETE(
-    request: Request,
-    { params }: { params: { chatId: string } }
+    request: NextRequest,
+    { params }: { params: Promise<{ chatId: string }> }
 ) {
     try {
         const { env } = await getCloudflareContext();
@@ -71,7 +70,7 @@ export async function DELETE(
             );
         }
 
-        const { chatId } = params;
+        const { chatId } = await params;
 
         // 删除消息
         await db.prepare(`DELETE FROM ChatMessage WHERE chatId = ?`).bind(chatId).run();

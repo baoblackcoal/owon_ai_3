@@ -21,7 +21,7 @@ export async function GET(
 
         // 获取对话信息
         const chatResult = await db.prepare(`
-            SELECT id, title, dashscopeSessionId, createdAt, updatedAt
+            SELECT id, title, chatId, createdAt, updatedAt
             FROM Chat 
             WHERE id = ?
         `).bind(chatId).first();
@@ -35,7 +35,7 @@ export async function GET(
 
         // 获取消息历史
         const { results: messages } = await db.prepare(`
-            SELECT id, role, userPrompt, aiResponse, timestamp
+            SELECT id, role, userPrompt, aiResponse, dashscopeSessionId, timestamp
             FROM ChatMessage 
             WHERE chatId = ? 
             ORDER BY timestamp ASC

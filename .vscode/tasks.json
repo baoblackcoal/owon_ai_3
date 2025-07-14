@@ -1,0 +1,23 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "tsc-watch",
+			"type": "shell",
+			"command": "cd nextjs/src/test ; tsc -p tsconfig.json --watch",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"isBackground": true,
+			"problemMatcher": {
+				"base": "$tsc-watch",
+				"background": {
+					"activeOnStart": true,
+					"beginsPattern": "Starting compilation in watch mode...",
+					"endsPattern": "Watching for file changes."
+				}
+			}
+		}
+	]
+  }

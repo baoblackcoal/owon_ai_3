@@ -2,10 +2,16 @@
 - 将聊天信息保存到数据库
 
 ## TMP_TODO
-- ChatMessage表
+- 在新建聊天对话后，第一次发送消息会先建一个ChatID，但是测试在第二次发送消息时，又会再建一个ChatID，导致同一个对话，有两个ChatID。第三次对话不会新建ChatID了，没有这个问题
+- dashscopeSessionId 设置错误，需要设置为
+
+- 在新建聊天对话后，发送第一个消息，左侧的聊天历史列表没有更新
+
+- ChatMessage表 ———— 完成
     - previousMessageId没有保存到数据库
     - chatId与dashscopeSessionId需要互换
-- chat表dashscopeSessionId需要改成chatId
+- chat表 ———— 完成
+    - dashscopeSessionId需要改成chatId
 
 # 上线最小MVP V1.0.0
 - 聊天页面

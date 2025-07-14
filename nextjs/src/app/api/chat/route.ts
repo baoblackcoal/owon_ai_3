@@ -171,9 +171,9 @@ async function saveMessageToDatabase(
         
         // 保存消息
         await db.prepare(`
-            INSERT INTO ChatMessage (id, chatId, messageIndex, role, userPrompt, aiResponse, timestamp)
-            VALUES (?, ?, ?, 'user', ?, ?, datetime('now'))
-        `).bind(messageId, chatId, messageIndex, userPrompt, aiResponse).run();
+            INSERT INTO ChatMessage (id, chatId, messageIndex, role, userPrompt, aiResponse, dashscopeSessionId, timestamp)
+            VALUES (?, ?, ?, 'user', ?, ?, ?, datetime('now'))
+        `).bind(messageId, chatId, messageIndex, userPrompt, aiResponse, dashscopeSessionId).run();
 
         // 更新对话的最后更新时间、消息数量和dashscopeSessionId
         await db.prepare(`
@@ -229,41 +229,50 @@ function processSseStream(
                         
                         // When the stream is finished, append the session ID and chat ID if available.
                         if (newDashscopeSessionId) {
+                            // console.log('发送 session_id 到前端:', newDashscopeSessionId);
                             controller.enqueue(encoder.encode(`\n<session_id>${newDashscopeSessionId}</session_id>`));
+                        } else {
+                            console.log('警告: newDashscopeSessionId 为空');
                         }
                         // Always send chatId to frontend
+                        // console.log('发送 chat_id 到前端:', chatId);
                         controller.enqueue(encoder.encode(`\n<chat_id>${chatId}</chat_id>`));
                         controller.close();
                         break;
                     }
 
                     buffer += decoder.decode(value, { stream: true });
-                    const lines = buffer.split('\n');
+                    
+                    // 按SSE事件分割（两个换行符）
+                    const events = buffer.split(/\n\n/);
+                    buffer = events.pop() || ''; // 保留未完成部分
 
-                    // Keep the last line in the buffer in case it's an incomplete chunk.
-                    buffer = lines.pop() || '';
-
-                    for (const line of lines) {
-                        if (!line.startsWith('data:')) continue;
-
-                        try {
-                            const jsonStr = line.slice(5).trim();
-                            // Ensure the JSON string is complete before parsing.
-                            if (jsonStr && jsonStr.startsWith('{') && jsonStr.endsWith('}')) {
-                                const jsonData = JSON.parse(jsonStr);
-                                if (jsonData.output?.text) {
-                                    aiResponse += jsonData.output.text;
-                                    controller.enqueue(encoder.encode(jsonData.output.text));
-                                }
-                                if (jsonData.output?.session_id) {
-                                    newDashscopeSessionId = jsonData.output.session_id;
+                    events.forEach(eventData => {
+                        const lines = eventData.split('\n');
+                        
+                        // 解析事件内容
+                        lines.forEach(line => {
+                            if (line.startsWith('data:')) {
+                                try {
+                                    const jsonStr = line.slice(5).trim();
+                                    if (jsonStr && jsonStr.startsWith('{') && jsonStr.endsWith('}')) {
+                                        const jsonData = JSON.parse(jsonStr);
+                                        // console.log('DashScope API 响应:', JSON.stringify(jsonData, null, 2));
+                                        if (jsonData.output?.text) {
+                                            aiResponse += jsonData.output.text;
+                                            controller.enqueue(encoder.encode(jsonData.output.text));
+                                        }
+                                        if (jsonData.output?.session_id) {
+                                            // console.log('从 DashScope 收到 session_id:', jsonData.output.session_id);
+                                            newDashscopeSessionId = jsonData.output.session_id;
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.error('JSON parsing error:', e);
                                 }
                             }
-                        } catch (e) {
-                            console.error('JSON parsing error:', e);
-                            // Skip corrupted lines without breaking the stream.
-                        }
-                    }
+                        });
+                    });
                 }
             } catch (error) {
                 console.error('Stream processing error:', error);

@@ -5,5 +5,6 @@ CREATE TABLE ChatMessage (
     role TEXT NOT NULL, -- 角色：user、assistant
     userPrompt TEXT NOT NULL, -- 用户输入内容
     aiResponse TEXT NOT NULL, -- AI回复内容
+    dashscopeSessionId TEXT, -- DashScope会话ID，用于多轮对话上下文
     timestamp TEXT DEFAULT (strftime('%Y-%m-%d %H:%M:%S', 'now')) NOT NULL -- 时间戳
 );

@@ -17,6 +17,7 @@ export default function ChatPage() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [currentChatId, setCurrentChatId] = useState<string>('');
+  const [dashscopeSessionId, setDashscopeSessionId] = useState<string>('');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // 自动滚动到底部
@@ -25,6 +26,11 @@ export default function ChatPage() {
       scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // 监控 dashscopeSessionId 的变化
+  // useEffect(() => {
+  //   console.log('dashscopeSessionId 状态变化:', dashscopeSessionId);
+  // }, [dashscopeSessionId]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -41,12 +47,14 @@ export default function ChatPage() {
     setIsLoading(true);
 
     try {
+      // console.log('发送请求前的状态:', { input, currentChatId, dashscopeSessionId });
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           message: input,
-          chatId: currentChatId // 发送当前聊天ID
+          chatId: currentChatId, // 发送当前聊天ID
+          dashscopeSessionId: dashscopeSessionId // 发送当前DashScope会话ID
         }),
       });
 
@@ -55,33 +63,74 @@ export default function ChatPage() {
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
+      let buffer = ''; // 用于处理跨chunk的标签
 
       // 更新最后一条消息（AI回复）
       while (true) {
         const { value, done } = await reader.read();
-        if (done) break;
+        if (done) {
+          // 处理剩余的buffer
+          if (buffer) {
+            let displayText = buffer.replace(/<[^>]*>/g, ''); // 移除XML标签
+            displayText = displayText.replace(/\b[a-f0-9]{32}\b/g, ''); // 移除32位十六进制字符串
+            displayText = displayText.trim(); // 去除前后空格
+            
+            if (displayText) {
+              setMessages(prev => {
+                const newMessages = [...prev];
+                const lastMessage = newMessages[newMessages.length - 1];
+                lastMessage.content += displayText;
+                return newMessages;
+              });
+            }
+          }
+          break;
+        }
 
         const text = decoder.decode(value);
+        buffer += text;
         
-        // 检查是否包含 chat_id
+        // 检查并处理 chat_id 标签
         const chatIdPattern = /<chat_id>(.*?)<\/chat_id>/;
-        const chatMatch = text.match(chatIdPattern);
+        const chatMatch = buffer.match(chatIdPattern);
         if (chatMatch) {
           setCurrentChatId(chatMatch[1]); // 保存新的聊天ID
-          continue; // 跳过显示 chat_id
+          buffer = buffer.replace(chatIdPattern, ''); // 从buffer中移除
+          // continue;
         }
         
-        // 跳过 session_id 标签
-        if (text.includes('<session_id>') || text.includes('</session_id>')) {
+        // 检查并处理 session_id 标签
+        const sessionIdPattern = /<session_id>(.*?)<\/session_id>/;
+        const sessionMatch = buffer.match(sessionIdPattern);
+        if (sessionMatch) {
+          // console.log('收到新的 session_id:', sessionMatch[1]);
+          setDashscopeSessionId(sessionMatch[1]); // 保存新的DashScope会话ID
+          buffer = buffer.replace(sessionIdPattern, ''); // 从buffer中移除
           continue;
         }
 
-        setMessages(prev => {
-          const newMessages = [...prev];
-          const lastMessage = newMessages[newMessages.length - 1];
-          lastMessage.content += text;
-          return newMessages;
-        });
+        // 检查是否有不完整的标签
+        const incompleteTagPattern = /<(chat_id|session_id)([^>]*)$/;
+        if (incompleteTagPattern.test(buffer)) {
+          // 有不完整的标签，等待更多数据
+          continue;
+        }
+
+        // 移除所有XML样式的标签和32位十六进制字符串（session_id格式），只保留纯文本
+        let cleanText = buffer.replace(/<[^>]*>/g, ''); // 移除XML标签
+        cleanText = cleanText.replace(/\b[a-f0-9]{32}\b/g, ''); // 移除32位十六进制字符串
+        cleanText = cleanText.trim(); // 去除前后空格
+        
+        if (cleanText) { // 只有当有实际内容时才更新
+          setMessages(prev => {
+            const newMessages = [...prev];
+            const lastMessage = newMessages[newMessages.length - 1];
+            lastMessage.content += cleanText;
+            return newMessages;
+          });
+        }
+        
+        buffer = ''; // 清空buffer
       }
     } catch (error) {
       console.error('聊天请求失败:', error);
@@ -100,6 +149,7 @@ export default function ChatPage() {
   const handleNewChat = () => {
     setMessages([]);
     setCurrentChatId('');
+    setDashscopeSessionId(''); // 清空DashScope会话ID
   };
 
   // 选择历史对话
@@ -109,7 +159,8 @@ export default function ChatPage() {
       if (!response.ok) throw new Error('加载对话失败');
       
       const data = await response.json();
-      const { messages: historyMessages } = data as { 
+      const { chat, messages: historyMessages } = data as { 
+        chat: { dashscopeSessionId?: string },
         messages: Array<{ userPrompt: string, aiResponse: string }> 
       };
       
@@ -122,6 +173,7 @@ export default function ChatPage() {
       
       setMessages(formattedMessages);
       setCurrentChatId(chatId);
+      setDashscopeSessionId(chat.dashscopeSessionId || ''); // 设置DashScope会话ID
     } catch (error) {
       console.error('加载历史对话失败:', error);
     }

@@ -17,7 +17,8 @@ export async function GET(
             );
         }
 
-        const { chatId } = params;
+        const resolvedParams = await params;
+        const { chatId } = resolvedParams;
 
         // 获取对话信息
         const chatResult = await db.prepare(`

@@ -27,7 +27,6 @@
 - 组件使用 shadcn/ui 组件库
 - 使用 Tailwind CSS 进行样式开发
 - 编写的代码需要符合Cloudflare Workers的开发规范，因为需要部署到Cloudflare Workers
-- 修改代码完后需要支持哪个 pnpm lint 命令, 修改相关问题
 
 # 测试
 - 使用 Playwright MCP 测试页面（不需要写测试代码）

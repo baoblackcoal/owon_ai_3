@@ -32,6 +32,21 @@ export default function ChatPage() {
   //   console.log('dashscopeSessionId 状态变化:', dashscopeSessionId);
   // }, [dashscopeSessionId]);
 
+  function parseConcatenatedJson(jsonString: string) {
+    // Split the string by the '}{' pattern, but keep the braces for each part
+    const jsonStrings = jsonString.split(/}(?={)/).map(s => {
+      // Add the closing brace back if it was removed by the split
+      if (!s.endsWith('}')) {
+        return s + '}';
+      }
+      return s;
+    });
+  
+    // Parse each individual JSON string
+    const parsedData = jsonStrings.map(s => JSON.parse(s));
+    return parsedData;
+  }
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
@@ -47,14 +62,13 @@ export default function ChatPage() {
     setIsLoading(true);
 
     try {
-      // console.log('发送请求前的状态:', { input, currentChatId, dashscopeSessionId });
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           message: input,
-          chatId: currentChatId, // 发送当前聊天ID
-          dashscopeSessionId: dashscopeSessionId // 发送当前DashScope会话ID
+          chatId: currentChatId,
+          dashscopeSessionId: dashscopeSessionId
         }),
       });
 
@@ -63,74 +77,53 @@ export default function ChatPage() {
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      let buffer = ''; // 用于处理跨chunk的标签
+      let buffer = '';
+      let session_id = '';
+      let chat_id = '';
 
-      // 更新最后一条消息（AI回复）
       while (true) {
         const { value, done } = await reader.read();
         if (done) {
-          // 处理剩余的buffer
-          if (buffer) {
-            let displayText = buffer.replace(/<[^>]*>/g, ''); // 移除XML标签
-            displayText = displayText.replace(/\b[a-f0-9]{32}\b/g, ''); // 移除32位十六进制字符串
-            displayText = displayText.trim(); // 去除前后空格
-            
-            if (displayText) {
-              setMessages(prev => {
-                const newMessages = [...prev];
-                const lastMessage = newMessages[newMessages.length - 1];
-                lastMessage.content += displayText;
-                return newMessages;
-              });
-            }
-          }
+          console.log('session_id:', session_id);
+          console.log('chat_id:', chat_id);
+          setDashscopeSessionId(session_id);
+          setCurrentChatId(chat_id);
           break;
         }
 
         const text = decoder.decode(value);
-        buffer += text;
-        
-        // 检查并处理 chat_id 标签
-        const chatIdPattern = /<chat_id>(.*?)<\/chat_id>/;
-        const chatMatch = buffer.match(chatIdPattern);
-        if (chatMatch) {
-          setCurrentChatId(chatMatch[1]); // 保存新的聊天ID
-          buffer = buffer.replace(chatIdPattern, ''); // 从buffer中移除
-          // continue;
-        }
-        
-        // 检查并处理 session_id 标签
-        const sessionIdPattern = /<session_id>(.*?)<\/session_id>/;
-        const sessionMatch = buffer.match(sessionIdPattern);
-        if (sessionMatch) {
-          // console.log('收到新的 session_id:', sessionMatch[1]);
-          setDashscopeSessionId(sessionMatch[1]); // 保存新的DashScope会话ID
-          buffer = buffer.replace(sessionIdPattern, ''); // 从buffer中移除
-          continue;
-        }
+        buffer = text;
 
-        // 检查是否有不完整的标签
-        const incompleteTagPattern = /<(chat_id|session_id)([^>]*)$/;
-        if (incompleteTagPattern.test(buffer)) {
-          // 有不完整的标签，等待更多数据
-          continue;
-        }
+        try {          
+          const data = parseConcatenatedJson(buffer);
 
-        // 移除所有XML样式的标签和32位十六进制字符串（session_id格式），只保留纯文本
-        let cleanText = buffer.replace(/<[^>]*>/g, ''); // 移除XML标签
-        cleanText = cleanText.replace(/\b[a-f0-9]{32}\b/g, ''); // 移除32位十六进制字符串
-        cleanText = cleanText.trim(); // 去除前后空格
-        
-        if (cleanText) { // 只有当有实际内容时才更新
-          setMessages(prev => {
-            const newMessages = [...prev];
-            const lastMessage = newMessages[newMessages.length - 1];
-            lastMessage.content += cleanText;
-            return newMessages;
-          });
-        }
-        
-        buffer = ''; // 清空buffer
+          data.forEach(async item => {
+            const output = item.output;
+            const t = output?.text;
+            if (t) {
+              console.log('t:', t);
+              setMessages(prev => {
+                if (prev.length === 0) return prev;
+                // 使用不可变更新，避免对同一对象进行多次原地修改导致的内容重复
+                return prev.map((msg, idx) =>
+                  idx === prev.length - 1
+                    ? { ...msg, content: msg.content + t }
+                    : msg
+                );
+              });
+            }                    
+          }); 
+
+          // get session_id and chat_id from data frommetadata
+          const metadata = data.find(item => item.type === 'metadata');
+          if (metadata) {
+            session_id = metadata.session_id;
+            chat_id = metadata.chat_id;
+          }
+        } catch (e) {
+          // JSON解析失败，可能是不完整的数据
+          break;
+        }      
       }
     } catch (error) {
       console.error('聊天请求失败:', error);

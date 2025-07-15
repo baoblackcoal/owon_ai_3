@@ -227,16 +227,12 @@ function processSseStream(
                         // 保存消息到数据库
                         await saveMessageToDatabase(chatId, userPrompt, aiResponse, newDashscopeSessionId);
                         
-                        // When the stream is finished, append the session ID and chat ID if available.
-                        if (newDashscopeSessionId) {
-                            // console.log('发送 session_id 到前端:', newDashscopeSessionId);
-                            controller.enqueue(encoder.encode(`\n<session_id>${newDashscopeSessionId}</session_id>`));
-                        } else {
-                            console.log('警告: newDashscopeSessionId 为空');
-                        }
-                        // Always send chatId to frontend
-                        // console.log('发送 chat_id 到前端:', chatId);
-                        controller.enqueue(encoder.encode(`\n<chat_id>${chatId}</chat_id>`));
+                        // Send final metadata
+                        controller.enqueue(encoder.encode(JSON.stringify({
+                            type: 'metadata',
+                            session_id: newDashscopeSessionId,
+                            chat_id: chatId
+                        })));
                         controller.close();
                         break;
                     }
@@ -257,15 +253,14 @@ function processSseStream(
                                     const jsonStr = line.slice(5).trim();
                                     if (jsonStr && jsonStr.startsWith('{') && jsonStr.endsWith('}')) {
                                         const jsonData = JSON.parse(jsonStr);
-                                        // console.log('DashScope API 响应:', JSON.stringify(jsonData, null, 2));
                                         if (jsonData.output?.text) {
                                             aiResponse += jsonData.output.text;
-                                            controller.enqueue(encoder.encode(jsonData.output.text));
                                         }
                                         if (jsonData.output?.session_id) {
-                                            // console.log('从 DashScope 收到 session_id:', jsonData.output.session_id);
                                             newDashscopeSessionId = jsonData.output.session_id;
                                         }
+                                        // 直接发送整个jsonData对象
+                                        controller.enqueue(encoder.encode(jsonStr));
                                     }
                                 } catch (e) {
                                     console.error('JSON parsing error:', e);

@@ -270,9 +270,7 @@ function processSseStream(
                                         if (jsonData.output?.session_id) {
                                             newDashscopeSessionId = jsonData.output.session_id;
                                         }
-                                        console.log('jsonData', JSON.stringify(jsonData, null, 2));
                                         controller.enqueue(encoder.encode(jsonStr));
-                                        await new Promise(resolve => setTimeout(resolve, 500));
                                     }
                                 } catch (e) {
                                     console.error('JSON parsing error:', e);

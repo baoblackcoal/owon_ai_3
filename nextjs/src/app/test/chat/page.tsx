@@ -1,21 +1,18 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-
-interface Message {
-  role: 'user' | 'assistant';
-  content: string;
-}
+import { Button } from "@/components/ui/button";
+import { ChatInput } from '@/components/ChatInput';
+import { Message, DashScopeResponse, MetadataResponse } from '@/types/chat';
+import { parseConcatenatedJson } from '@/lib/chat-utils';
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [sessionId, setSessionId] = useState<string>('');
+  const [chatId, setChatId] = useState<string>('');
+  const [dashscopeSessionId, setDashscopeSessionId] = useState<string>('');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // 自动滚动到底部
@@ -25,75 +22,99 @@ export default function ChatPage() {
     }
   }, [messages]);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading) return;
+  const sendMessage = useCallback(async (content: string) => {
+    if (!content.trim() || isLoading) return;
 
-    const userMessage: Message = { role: 'user', content: input };
-    setMessages(prev => [...prev, userMessage]);
-    
-    // 创建一个空的AI回复消息
-    const aiMessage: Message = { role: 'assistant', content: '' };
-    setMessages(prev => [...prev, aiMessage]);
-    
-    setInput('');
+    // 添加用户消息
+    setMessages(prev => [...prev, { role: 'user', content }]);
+
+    // 添加占位的 AI 消息
+    setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/test/chat', {
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          message: input,
-          sessionId: sessionId // 发送当前会话ID
+        body: JSON.stringify({
+          message: content,
+          chatId,
+          dashscopeSessionId,
         }),
       });
 
-      if (!response.ok) throw new Error('请求失败');
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({})) as { error?: string };
+        throw new Error(errData.error || '请求失败');
+      }
+
       if (!response.body) throw new Error('没有响应数据');
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      const sessionIdPattern = /<session_id>(.*?)<\/session_id>/;
+      let buffer = '';
+      let newSessionId = dashscopeSessionId;
+      let newChatId = chatId;
 
-      // 更新最后一条消息（AI回复）
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
 
-        const text = decoder.decode(value);
-        
-        // 检查是否包含 session_id
-        const sessionMatch = text.match(sessionIdPattern);
-        if (sessionMatch) {
-          setSessionId(sessionMatch[1]); // 保存新的会话ID
-          continue; // 跳过显示 session_id
-        }
+        const chunk = decoder.decode(value);
+        buffer += chunk;
 
-        setMessages(prev => {
-          const newMessages = [...prev];
-          const lastMessage = newMessages[newMessages.length - 1];
-          lastMessage.content += text;
-          return newMessages;
-        });
+        try {
+          const jsonObjects = parseConcatenatedJson(buffer);
+          const lastBraceIdx = buffer.lastIndexOf('}');
+          if (lastBraceIdx !== -1) {
+            buffer = buffer.substring(lastBraceIdx + 1);
+          }
+
+          jsonObjects.forEach(obj => {
+            if ('output' in obj) {
+              const dashResp = obj as DashScopeResponse;
+              const text = dashResp.output?.text;
+              if (text) {
+                setMessages(prev => {
+                  if (prev.length === 0) return prev;
+                  return prev.map((msg, idx) =>
+                    idx === prev.length - 1 ? { ...msg, content: msg.content + text } : msg
+                  );
+                });
+              }
+            } else if ('type' in obj && obj.type === 'metadata') {
+              const meta = obj as MetadataResponse;
+              newSessionId = meta.session_id;
+              newChatId = meta.chat_id;
+            }
+          });
+        } catch (e) {
+          console.error('解析数据失败:', e);
+          // 继续读取
+        }
       }
+
+      setDashscopeSessionId(newSessionId);
+      setChatId(newChatId);
     } catch (error) {
       console.error('聊天请求失败:', error);
       setMessages(prev => {
+        if (prev.length === 0) return prev;
         const newMessages = [...prev];
-        const lastMessage = newMessages[newMessages.length - 1];
-        lastMessage.content = '抱歉，发生了错误，请重试。';
+        const last = newMessages[newMessages.length - 1];
+        last.content = '抱歉，发生了错误，请重试。';
         return newMessages;
       });
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [chatId, dashscopeSessionId, isLoading]);
 
-  // 清除对话历史
   const handleClearChat = () => {
     setMessages([]);
-    setSessionId('');
+    setChatId('');
+    setDashscopeSessionId('');
   };
 
   return (
@@ -115,9 +136,7 @@ export default function ChatPage() {
             {messages.map((message, index) => (
               <div
                 key={index}
-                className={`flex ${
-                  message.role === 'user' ? 'justify-end' : 'justify-start'
-                }`}
+                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
                   className={`max-w-[80%] rounded-lg p-4 whitespace-pre-wrap ${
@@ -134,18 +153,7 @@ export default function ChatPage() {
         </ScrollArea>
       </Card>
 
-      <form onSubmit={handleSubmit} className="flex gap-2">
-        <Input
-          value={input}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
-          placeholder="输入消息..."
-          disabled={isLoading}
-          className="flex-1"
-        />
-        <Button type="submit" disabled={isLoading}>
-          {isLoading ? '发送中...' : '发送'}
-        </Button>
-      </form>
+      <ChatInput onSendMessage={sendMessage} isLoading={isLoading} />
     </div>
   );
 } 

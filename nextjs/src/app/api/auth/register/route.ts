@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 
 // 注册表单验证schema
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
 
     // 加密密码
     const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12');
-    const passwordHash = await bcrypt.hash(password, saltRounds);
+    const passwordHash = bcrypt.hashSync(password, saltRounds);
 
     // 创建用户
     const userId = crypto.randomUUID();

@@ -1,7 +1,7 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { z } from "zod";
 import type { JWT } from "next-auth/jwt";
 import type { Session } from "next-auth";
@@ -64,7 +64,7 @@ const authConfig = (NextAuth as any)({
           }
 
           // 验证密码
-          const isValid = await bcrypt.compare(password, user.password_hash);
+          const isValid = bcrypt.compareSync(password, user.password_hash);
           if (!isValid) {
             return null;
           }
@@ -112,6 +112,7 @@ const authConfig = (NextAuth as any)({
       return session;
     }
   },
+  trustHost: true,
   pages: {
     signIn: "/auth/signin",
     error: "/auth/error",

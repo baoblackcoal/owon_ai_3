@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/lib/auth';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 
 // 修改密码表单验证schema
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 验证当前密码
-    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password_hash);
+    const isCurrentPasswordValid = bcrypt.compareSync(currentPassword, user.password_hash);
     if (!isCurrentPasswordValid) {
       return NextResponse.json(
         { error: '当前密码不正确' },
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     // 加密新密码
     const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12');
-    const newPasswordHash = await bcrypt.hash(newPassword, saltRounds);
+    const newPasswordHash = bcrypt.hashSync(newPassword, saltRounds);
 
     // 更新密码
     await db.prepare(`

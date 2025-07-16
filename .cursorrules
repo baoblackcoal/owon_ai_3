@@ -8,12 +8,19 @@
 
 # 数据库
 - 测试注册邮箱使用 baojianbin@owoncn.com , 测试密码为 llp123456
+- 数据库迁移文件存放在 src/sql/ 目录下
+- 使用 npx wrangler d1 命令行工具测试数据库
+- 数据库表结构：
+  - users: 用户表，包含 id, email, password_hash, is_guest, chat_count, last_chat_date 等字段
+  - chat_sessions: 聊天会话表，包含 user_id 外键
+  - chat_messages: 聊天消息表，包含 user_id 外键
 
 # 项目配置
-- 开发服务器：pnpm dev (使用 turbopack)
-- 生产构建：pnpm build
-- 生产服务器：pnpm start
-- 代码检查：pnpm lint
+- 开发服务器：cd nextjs && pnpm dev (使用 turbopack)
+- 生产构建：cd nextjs && pnpm build
+- 生产服务器：cd nextjs && pnpm start
+- 代码检查：cd nextjs && pnpm lint
+- 类型检查：cd nextjs && pnpm run check
 - 环境配置文件：
   - 开发环境：.env.development.local
   - 生产环境：.env.production.local
@@ -22,10 +29,39 @@
 - 使用 TypeScript 进行开发
 - 使用 ESLint 进行代码检查
 - 使用 Prettier 进行代码格式化
-- SQL 文件存放在 sql/ 目录下
+- SQL 文件存放在 src/sql/ 目录下
 - 组件使用 shadcn/ui 组件库
 - 使用 Tailwind CSS 进行样式开发
 - 编写的代码需要符合Cloudflare Workers的开发规范，因为需要部署到Cloudflare Workers
+
+# 用户系统和认证
+- 使用 NextAuth.js v5 (next-auth@beta) 进行用户认证
+- 支持邮箱+密码的 Credentials Provider
+- 实现游客用户逻辑：未登录用户自动创建临时账号
+- 聊天次数限制：游客用户每天20次，正式用户每天100次
+- 密码使用 bcrypt 加密（12轮salt）
+- 用户会话使用 JWT 策略
+- 游客用户通过 httpOnly cookie 管理
+- 认证配置文件：src/lib/auth.ts
+- 用户工具函数：src/lib/user-utils.ts
+- 类型定义：src/types/next-auth.d.ts
+
+# API 路由规范
+- /api/auth/register - 用户注册
+- /api/auth/change-password - 修改密码
+- /api/auth/[...nextauth] - NextAuth 认证路由
+- /api/user/chat-info - 获取用户聊天信息
+- /api/chat/* - 聊天相关API，支持用户认证和次数限制
+- 所有API都需要支持用户认证状态检查
+
+# UI 组件规范
+- AuthDialog：登录/注册对话框组件
+- UserMenu：用户头像下拉菜单组件
+- Header：顶部导航栏组件
+- SettingsDialog：设置页面组件
+- SessionProvider：NextAuth 会话提供者组件
+- 所有组件使用 shadcn/ui 和 Tailwind CSS
+- 支持响应式设计和深色模式
 
 # 类型检查和构建规范
 - 在开发环境和生产环境保持相同的类型检查标准
@@ -39,14 +75,28 @@
 - 每次修改代码后要运行 pnpm run check 确保类型正确
 - 使用 IDE 的类型检查插件进行实时类型检查
 - 确保 tsconfig.json 中的 strict 模式保持启用
+- NextAuth v5 相关类型问题可以使用适当的类型断言，但需要添加 ESLint 禁用注释
 
 # 测试
 - 使用 Playwright MCP 测试页面（不需要写测试代码）
 - 使用 npx wrangler d1 命令行工具测试数据库
+- 测试用户认证流程：注册、登录、游客模式、聊天次数限制
+- 测试数据库迁移和用户数据完整性
 
-# 注意
-- pnpm dev 需要开发人员手动启动，因为开发人员有可能已经启动过
+# 部署和环境变量
+- 必需的环境变量：
+  - AUTH_SECRET：NextAuth 密钥
+  - DATABASE_URL：Cloudflare D1 数据库连接
+  - NEXTAUTH_URL：部署域名（生产环境）
+- 开发环境变量文件：.env.development.local
+- 生产环境变量文件：.env.production.local
+
+# 注意事项
+- pnpm dev 需要在 nextjs 目录下运行：cd nextjs && pnpm dev
 - 开发环境是在windows11，终端是PowerShell，使用多命令的时候需要使用分号连接
-- 不要在根目录中增加package.json， package.json在src目录下
+- package.json 在 nextjs 目录下，不要在根目录中增加 package.json
 - 在开发过程中必须及时修复类型错误，不能等到构建时才处理
 - 每次代码提交前都要运行 pnpm run check 确保类型正确
+- 用户系统已完成实现，包括认证、游客模式、聊天限制等功能
+- 数据库迁移文件已执行，用户表结构已建立
+- NextAuth v5 可能需要类型断言处理兼容性问题，使用时需要添加适当的 ESLint 禁用注释

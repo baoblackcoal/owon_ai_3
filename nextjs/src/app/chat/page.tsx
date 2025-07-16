@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import ChatSidebar from '@/components/ChatSidebar';
+import { QuickQuestions } from '@/components/QuickQuestions';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -40,17 +41,15 @@ export default function ChatPage() {
     return parsedData;
   }
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading) return;
+  const sendMessage = async (message: string) => {
+    if (!message.trim() || isLoading) return;
 
-    const userMessage: Message = { role: 'user', content: input };
+    const userMessage: Message = { role: 'user', content: message };
     setMessages(prev => [...prev, userMessage]);
     
     const aiMessage: Message = { role: 'assistant', content: '' };
     setMessages(prev => [...prev, aiMessage]);
     
-    setInput('');
     setIsLoading(true);
 
     try {
@@ -58,7 +57,7 @@ export default function ChatPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          message: input,
+          message: message,
           chatId: currentChatId,
           dashscopeSessionId: dashscopeSessionId
         }),
@@ -91,12 +90,9 @@ export default function ChatPage() {
             const output = item.output;
             const t = output?.text;
             if (t) {
-              // change t to markdown
               const markdown = t;
-              // set message content to markdown
               setMessages(prev => {
                 if (prev.length === 0) return prev;
-                // 使用不可变更新，避免对同一对象进行多次原地修改导致的内容重复
                 return prev.map((msg, idx) =>
                   idx === prev.length - 1
                     ? { ...msg, content: msg.content + markdown }
@@ -106,14 +102,12 @@ export default function ChatPage() {
             }                    
           }); 
 
-          // get session_id and chat_id from data frommetadata
           const metadata = data.find(item => item.type === 'metadata');
           if (metadata) {
             session_id = metadata.session_id;
             chat_id = metadata.chat_id;
           }
         } catch (e) {
-          // JSON解析失败，可能是不完整的数据
           setMessages(prev => {
             const newMessages = [...prev];
             const lastMessage = newMessages[newMessages.length - 1];
@@ -134,6 +128,12 @@ export default function ChatPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    await sendMessage(input);
+    setInput('');
   };
 
   // 创建新对话
@@ -210,7 +210,12 @@ export default function ChatPage() {
         </ScrollArea>
       </Card>
 
-              <form onSubmit={handleSubmit} className="flex gap-2">
+      <QuickQuestions 
+        onQuestionSelect={sendMessage}
+        disabled={isLoading}
+      />
+
+      <form onSubmit={handleSubmit} className="flex gap-2" id="chat-input">
           <Input
             value={input}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}

@@ -100,3 +100,15 @@
 - 用户系统已完成实现，包括认证、游客模式、聊天限制等功能
 - 数据库迁移文件已执行，用户表结构已建立
 - NextAuth v5 可能需要类型断言处理兼容性问题，使用时需要添加适当的 ESLint 禁用注释
+
+# 重构及代码组织经验
+- 聊天相关类型统一放置在 `src/types/` 目录下，例如 `types/chat.ts`。
+- 共用工具函数放置在 `src/lib/` 目录下，例如 `lib/chat-utils.ts`，保持纯函数、无副作用。
+- 复杂状态使用 React Context 管理，Context 文件放置在 `src/contexts/` 目录，例如 `contexts/ChatContext.tsx`。
+- UI 组件保持原子化、单一职责，例如 `ChatMessage`、`ChatInput`、`ChatArea` 等，放置在 `src/components/`。
+- 组件之间通过 props 或 Context 通讯，避免直接导入彼此内部实现，保证低耦合。
+- 工具函数与 UI 组件解耦，UI 层不应包含业务逻辑；业务逻辑应封装在 hooks/contexts 中，保持高内聚。
+- 流式 JSON 解析统一使用 `parseConcatenatedJson`，避免在多处复制粘贴解析逻辑。
+- 所有 API 调用与错误处理应使用显式类型，错误捕获使用 `unknown`，并通过 `instanceof Error` 判断。
+- 严禁使用 `any`，必须为 API 响应和数据结构定义精确的接口类型。
+- 使用 `useCallback`、`useMemo` 等优化性能，避免不必要的重渲染。

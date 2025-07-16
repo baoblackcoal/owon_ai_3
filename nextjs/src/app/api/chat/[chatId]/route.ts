@@ -35,7 +35,7 @@ export async function GET(
 
         // 获取消息历史，按messageIndex排序
         const { results: messages } = await db.prepare(`
-            SELECT id, messageIndex, role, userPrompt, aiResponse, dashscopeSessionId, timestamp
+            SELECT id, messageIndex, role, userPrompt, aiResponse, dashscopeSessionId, feedback, timestamp
             FROM ChatMessage 
             WHERE chatId = ? 
             ORDER BY messageIndex ASC

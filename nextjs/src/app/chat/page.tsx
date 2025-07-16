@@ -7,11 +7,14 @@ import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import ChatSidebar from '@/components/ChatSidebar';
 import { QuickQuestions } from '@/components/QuickQuestions';
+import { MessageActionBar } from '@/components/MessageActionBar';
 import { marked } from 'marked';
 
 interface Message {
+  id?: string;
   role: 'user' | 'assistant';
   content: string;
+  feedback?: 'like' | 'dislike' | null;
 }
 
 export default function ChatPage() {
@@ -48,7 +51,7 @@ export default function ChatPage() {
     const userMessage: Message = { role: 'user', content: message };
     setMessages(prev => [...prev, userMessage]);
 
-    const aiMessage: Message = { role: 'assistant', content: '' };
+    const aiMessage: Message = { role: 'assistant', content: '', feedback: null };
     setMessages(prev => [...prev, aiMessage]);
 
     setIsLoading(true);
@@ -106,8 +109,21 @@ export default function ChatPage() {
           if (metadata) {
             session_id = metadata.session_id;
             chat_id = metadata.chat_id;
+            
+            // 更新最后一条assistant消息的ID
+            if (metadata.message_id) {
+              setMessages(prev => {
+                if (prev.length === 0) return prev;
+                return prev.map((msg, idx) =>
+                  idx === prev.length - 1 && msg.role === 'assistant'
+                    ? { ...msg, id: metadata.message_id }
+                    : msg
+                );
+              });
+            }
           }
-        } catch (e) {
+        } catch (error) {
+          console.error('解析数据失败:', error);
           setMessages(prev => {
             const newMessages = [...prev];
             const lastMessage = newMessages[newMessages.length - 1];
@@ -143,6 +159,37 @@ export default function ChatPage() {
     setDashscopeSessionId(''); // 清空DashScope会话ID
   };
 
+  // 处理点赞/点踩
+  const handleFeedbackChange = async (messageId: string, feedback: 'like' | 'dislike' | null) => {
+    // 乐观更新UI
+    setMessages(prev => prev.map(msg => 
+      msg.id === messageId ? { ...msg, feedback } : msg
+    ));
+
+    try {
+      const response = await fetch(`/api/chat/message/${messageId}/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          type: feedback === null ? 'cancel' : feedback 
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('更新反馈失败');
+      }
+    } catch (error) {
+      console.error('更新反馈失败:', error);
+      // 回滚UI更新
+      setMessages(prev => prev.map(msg => 
+        msg.id === messageId ? { 
+          ...msg, 
+          feedback: feedback === 'like' ? 'dislike' : feedback === 'dislike' ? 'like' : null 
+        } : msg
+      ));
+    }
+  };
+
   // 选择历史对话
   const handleChatSelect = async (chatId: string) => {
     try {
@@ -152,14 +199,25 @@ export default function ChatPage() {
       const data = await response.json();
       const { chat, messages: historyMessages } = data as {
         chat: { dashscopeSessionId?: string },
-        messages: Array<{ userPrompt: string, aiResponse: string }>
+        messages: Array<{ id: string; userPrompt: string; aiResponse: string; feedback: number | null }>
       };
 
       // 转换消息格式
       const formattedMessages: Message[] = [];
       historyMessages.forEach((msg) => {
         formattedMessages.push({ role: 'user', content: msg.userPrompt });
-        formattedMessages.push({ role: 'assistant', content: msg.aiResponse });
+        
+        // 转换feedback数值为字符串
+        let feedback: 'like' | 'dislike' | null = null;
+        if (msg.feedback === 1) feedback = 'like';
+        else if (msg.feedback === -1) feedback = 'dislike';
+        
+        formattedMessages.push({ 
+          id: msg.id,
+          role: 'assistant', 
+          content: msg.aiResponse,
+          feedback: feedback
+        });
       });
 
       setMessages(formattedMessages);
@@ -194,17 +252,30 @@ export default function ChatPage() {
                   className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'
                     }`}
                 >
-                  <div
-                    className={`max-w-[80%] rounded-lg p-4 ${message.role === 'user'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted'
-                      }`}
-                  >
-                    {message.content ? (
-                      <div dangerouslySetInnerHTML={{ __html: marked(message.content) }} />
-                    ) : (
-                      message.role === 'assistant' && isLoading ? '正在思考...' : ''
-                    )}                
+                  <div className="max-w-[80%]">
+                    <div
+                      className={`rounded-lg p-4 ${message.role === 'user'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted'
+                        }`}
+                      id={message.role === 'user' ? `user-message-${index}` : `assistant-message-${index}`}
+                    >
+                      {message.content ? (
+                        <div dangerouslySetInnerHTML={{ __html: marked(message.content) }} />
+                      ) : (
+                        message.role === 'assistant' && isLoading ? '正在思考...' : ''
+                      )}                
+                    </div>
+                    
+                    {message.role === 'assistant' && (
+                      <MessageActionBar
+                        messageId={message.id}
+                        content={message.content}
+                        feedback={message.feedback}
+                        onFeedbackChange={handleFeedbackChange}
+                        disabled={isLoading}
+                      />
+                    )}
                   </div>
                 </div>
               ))}

@@ -259,6 +259,9 @@ export default function D1AllPage() {
               <Button variant="outline" onClick={handleAddRow}>
                 新增
               </Button>
+              <Button variant="outline" onClick={fetchTableData}>
+                刷新
+              </Button>
             </div>
           </Card>
 

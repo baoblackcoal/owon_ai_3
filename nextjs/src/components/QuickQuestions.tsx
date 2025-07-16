@@ -11,6 +11,7 @@ const QUICK_QUESTIONS: QuickQuestion[] = [
   { text: "你有什么功能？", icon: "🔍", label: "功能介绍" },
   { text: "ADS800的带宽是多少？", icon: "📊", label: "ADS800带宽" },
   { text: "ADS800的采样率是多少？", icon: "", label: "ADS800的采样率是多少？" },
+  { text: "我刚才问了什么？", icon: "", label: "我刚才问了什么？" },
 ];
 
 interface QuickQuestionsProps {

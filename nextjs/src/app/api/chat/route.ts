@@ -145,20 +145,21 @@ async function createNewChatSession(): Promise<string> {
  * @param userPrompt The user's input message.
  * @param aiResponse The AI's response.
  * @param dashscopeSessionId The DashScope session ID.
+ * @returns The messageId of the saved message.
  */
 async function saveMessageToDatabase(
     chatId: string, 
     userPrompt: string, 
     aiResponse: string, 
     dashscopeSessionId: string
-) {
+): Promise<string> {
     try {
         const { env } = await getCloudflareContext();
         const db = (env as unknown as { DB?: D1Database }).DB;
 
         if (!db) {
             console.error('数据库未绑定，无法保存消息');
-            return;
+            throw new Error('数据库未绑定');
         }
 
         // 获取当前聊天的消息数量，用作messageIndex
@@ -171,8 +172,8 @@ async function saveMessageToDatabase(
         
         // 保存消息
         await db.prepare(`
-            INSERT INTO ChatMessage (id, chatId, messageIndex, role, userPrompt, aiResponse, dashscopeSessionId, timestamp)
-            VALUES (?, ?, ?, 'user', ?, ?, ?, datetime('now'))
+            INSERT INTO ChatMessage (id, chatId, messageIndex, role, userPrompt, aiResponse, dashscopeSessionId, feedback, timestamp)
+            VALUES (?, ?, ?, 'user', ?, ?, ?, NULL, datetime('now'))
         `).bind(messageId, chatId, messageIndex, userPrompt, aiResponse, dashscopeSessionId).run();
 
         // 更新对话的最后更新时间、消息数量和dashscopeSessionId
@@ -191,8 +192,11 @@ async function saveMessageToDatabase(
                 UPDATE Chat SET title = ? WHERE id = ?
             `).bind(title, chatId).run();
         }
+        
+        return messageId;
     } catch (error) {
         console.error('保存消息到数据库失败:', error);
+        throw error;
     }
 }
 
@@ -217,6 +221,7 @@ function processSseStream(
     let buffer = '';
     let newDashscopeSessionId = '';
     let aiResponse = '';
+    let savedMessageId = '';
 
     return new ReadableStream({
         async start(controller) {
@@ -225,13 +230,14 @@ function processSseStream(
                     const { done, value } = await reader.read();
                     if (done) {
                         // 保存消息到数据库
-                        await saveMessageToDatabase(chatId, userPrompt, aiResponse, newDashscopeSessionId);
+                        savedMessageId = await saveMessageToDatabase(chatId, userPrompt, aiResponse, newDashscopeSessionId);
                         
                         // Send final metadata
                         controller.enqueue(encoder.encode(JSON.stringify({
                             type: 'metadata',
                             session_id: newDashscopeSessionId,
-                            chat_id: chatId
+                            chat_id: chatId,
+                            message_id: savedMessageId
                         })));
                         controller.close();
                         break;

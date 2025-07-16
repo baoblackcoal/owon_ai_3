@@ -258,7 +258,7 @@ function processSseStream(
                         const lines = eventData.split('\n');
                         
                         // 解析事件内容
-                        lines.forEach(line => {
+                        lines.forEach(async line => {
                             if (line.startsWith('data:')) {
                                 try {
                                     const jsonStr = line.slice(5).trim();
@@ -270,8 +270,9 @@ function processSseStream(
                                         if (jsonData.output?.session_id) {
                                             newDashscopeSessionId = jsonData.output.session_id;
                                         }
-                                        // 直接发送整个jsonData对象
+                                        console.log('jsonData', JSON.stringify(jsonData, null, 2));
                                         controller.enqueue(encoder.encode(jsonStr));
+                                        await new Promise(resolve => setTimeout(resolve, 500));
                                     }
                                 } catch (e) {
                                     console.error('JSON parsing error:', e);

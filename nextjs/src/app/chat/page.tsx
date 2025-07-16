@@ -18,6 +18,46 @@ interface Message {
   feedback?: 'like' | 'dislike' | null;
 }
 
+interface DashScopeThought {
+  action: string;
+  action_input_stream: string;
+  arguments: string;
+  action_type: string;
+  observation: string;
+  action_name: string;
+}
+
+interface DashScopeUsage {
+  models: Array<{
+    input_tokens: number;
+    output_tokens: number;
+    model_id: string;
+  }>;
+}
+
+interface DashScopeOutput {
+  thoughts: DashScopeThought[];
+  session_id: string;
+  finish_reason: string | null;
+  text: string;
+  reject_status: boolean;
+}
+
+interface DashScopeResponse {
+  output: DashScopeOutput;
+  usage: DashScopeUsage;
+  request_id: string;
+}
+
+interface MetadataResponse {
+  type: 'metadata';
+  session_id: string;
+  chat_id: string;
+  message_id: string;
+}
+
+type ParsedJsonObject = DashScopeResponse | MetadataResponse;
+
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -33,17 +73,35 @@ export default function ChatPage() {
     }
   }, [messages]);
 
-  function parseConcatenatedJson(jsonString: string) {
-    const jsonStrings = jsonString.split(/}(?={)/).map(s => {
-      if (!s.endsWith('}')) {
-        return s + '}';
-      }
-      return s;
-    });
+  function parseConcatenatedJson(jsonString: string): ParsedJsonObject[] {
+    const jsonObjects: ParsedJsonObject[] = [];
+    let currentJson = '';
+    let braceCount = 0;
 
-    // Parse each individual JSON string
-    const parsedData = jsonStrings.map(s => JSON.parse(s));
-    return parsedData;
+    // 遍历每个字符来正确处理嵌套的JSON对象
+    for (let i = 0; i < jsonString.length; i++) {
+      const char = jsonString[i];
+      currentJson += char;
+
+      if (char === '{') {
+        braceCount++;
+      } else if (char === '}') {
+        braceCount--;
+        
+        // 当找到一个完整的JSON对象时
+        if (braceCount === 0) {
+          try {
+            const parsedObject = JSON.parse(currentJson) as ParsedJsonObject;
+            jsonObjects.push(parsedObject);
+            currentJson = '';
+          } catch (e) {
+            console.error('JSON解析错误:', e);
+          }
+        }
+      }
+    }
+
+    return jsonObjects;
   }
 
   const sendMessage = async (message: string) => {
@@ -99,27 +157,36 @@ export default function ChatPage() {
         }
 
         const text = decoder.decode(value);
-        buffer = text;
+        buffer += text;
 
         try {
           const data = parseConcatenatedJson(buffer);
+          // 只保留未完成的部分（如果有的话）
+          const lastBraceIndex = buffer.lastIndexOf('}');
+          if (lastBraceIndex !== -1) {
+            buffer = buffer.substring(lastBraceIndex + 1);
+          }
 
           data.forEach(async item => {
-            const output = item.output;
-            const t = output?.text;
-            if (t) {
-              setMessages(prev => {
-                if (prev.length === 0) return prev;
-                return prev.map((msg, idx) =>
-                  idx === prev.length - 1
-                    ? { ...msg, content: msg.content + t }
-                    : msg
-                );
-              });
+            // 检查是否是 DashScope 响应
+            if ('output' in item) {
+              const dashScopeResponse = item as DashScopeResponse;
+              const t = dashScopeResponse.output?.text;
+              if (t) {
+                setMessages(prev => {
+                  if (prev.length === 0) return prev;
+                  return prev.map((msg, idx) =>
+                    idx === prev.length - 1
+                      ? { ...msg, content: msg.content + t }
+                      : msg
+                  );
+                });
+              }
             }
           });
 
-          const metadata = data.find(item => item.type === 'metadata');
+          // 检查是否有元数据响应
+          const metadata = data.find(item => 'type' in item && item.type === 'metadata') as MetadataResponse | undefined;
           if (metadata) {
             session_id = metadata.session_id;
             chat_id = metadata.chat_id;
@@ -138,13 +205,8 @@ export default function ChatPage() {
           }
         } catch (error) {
           console.error('解析数据失败:', error);
-          setMessages(prev => {
-            const newMessages = [...prev];
-            const lastMessage = newMessages[newMessages.length - 1];
-            lastMessage.content = '获取数据格式错误，请重试。';
-            return newMessages;
-          });
-          break;
+          // 不要立即中断，继续累积buffer直到收到完整的JSON
+          continue;
         }
       }
     } catch (error) {

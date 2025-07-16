@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import ChatSidebar from '@/components/ChatSidebar';
 import { QuickQuestions } from '@/components/QuickQuestions';
+import { marked } from 'marked';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -35,7 +36,7 @@ export default function ChatPage() {
       }
       return s;
     });
-  
+
     // Parse each individual JSON string
     const parsedData = jsonStrings.map(s => JSON.parse(s));
     return parsedData;
@@ -46,17 +47,17 @@ export default function ChatPage() {
 
     const userMessage: Message = { role: 'user', content: message };
     setMessages(prev => [...prev, userMessage]);
-    
+
     const aiMessage: Message = { role: 'assistant', content: '' };
     setMessages(prev => [...prev, aiMessage]);
-    
+
     setIsLoading(true);
 
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           message: message,
           chatId: currentChatId,
           dashscopeSessionId: dashscopeSessionId
@@ -83,24 +84,23 @@ export default function ChatPage() {
         const text = decoder.decode(value);
         buffer = text;
 
-        try {          
+        try {
           const data = parseConcatenatedJson(buffer);
 
           data.forEach(async item => {
             const output = item.output;
             const t = output?.text;
             if (t) {
-              const markdown = t;
               setMessages(prev => {
                 if (prev.length === 0) return prev;
                 return prev.map((msg, idx) =>
                   idx === prev.length - 1
-                    ? { ...msg, content: msg.content + markdown }
+                    ? { ...msg, content: msg.content + t }
                     : msg
                 );
               });
-            }                    
-          }); 
+            }
+          });
 
           const metadata = data.find(item => item.type === 'metadata');
           if (metadata) {
@@ -113,9 +113,9 @@ export default function ChatPage() {
             const lastMessage = newMessages[newMessages.length - 1];
             lastMessage.content = '获取数据格式错误，请重试。';
             return newMessages;
-          });          
+          });
           break;
-        }      
+        }
       }
     } catch (error) {
       console.error('聊天请求失败:', error);
@@ -148,20 +148,20 @@ export default function ChatPage() {
     try {
       const response = await fetch(`/api/chat/${chatId}`);
       if (!response.ok) throw new Error('加载对话失败');
-      
+
       const data = await response.json();
-      const { chat, messages: historyMessages } = data as { 
+      const { chat, messages: historyMessages } = data as {
         chat: { dashscopeSessionId?: string },
-        messages: Array<{ userPrompt: string, aiResponse: string }> 
+        messages: Array<{ userPrompt: string, aiResponse: string }>
       };
-      
+
       // 转换消息格式
       const formattedMessages: Message[] = [];
       historyMessages.forEach((msg) => {
         formattedMessages.push({ role: 'user', content: msg.userPrompt });
         formattedMessages.push({ role: 'assistant', content: msg.aiResponse });
       });
-      
+
       setMessages(formattedMessages);
       setCurrentChatId(chatId);
       setDashscopeSessionId(chat.dashscopeSessionId || ''); // 设置DashScope会话ID
@@ -173,49 +173,51 @@ export default function ChatPage() {
   return (
     <div className="flex h-screen">
       {/* 左侧边栏 */}
-      <ChatSidebar 
+      <ChatSidebar
         currentChatId={currentChatId}
         onChatSelect={handleChatSelect}
         onNewChat={handleNewChat}
       />
-      
+
       {/* 主聊天区域 */}
       <div className="flex flex-col flex-1 max-w-4xl mx-auto p-4">
         <div className="mb-4">
           <h1 className="text-2xl font-bold">AI 助手</h1>
         </div>
 
-      <Card className="flex-1 mb-4 p-4 overflow-hidden">
-        <ScrollArea className="h-[calc(100vh-200px)]" ref={scrollAreaRef}>
-          <div className="space-y-4">
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                className={`flex ${
-                  message.role === 'user' ? 'justify-end' : 'justify-start'
-                }`}
-              >
+        <Card className="flex-1 mb-4 p-4 overflow-hidden">
+          <ScrollArea className="h-[calc(100vh-200px)]" ref={scrollAreaRef}>
+            <div className="space-y-4">
+              {messages.map((message, index) => (
                 <div
-                  className={`max-w-[80%] rounded-lg p-4 whitespace-pre-wrap ${
-                    message.role === 'user'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted'
-                  }`}
+                  key={index}
+                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'
+                    }`}
                 >
-                  {message.content || (message.role === 'assistant' && isLoading ? '正在思考...' : '')}
+                  <div
+                    className={`max-w-[80%] rounded-lg p-4 ${message.role === 'user'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted'
+                      }`}
+                  >
+                    {message.content ? (
+                      <div dangerouslySetInnerHTML={{ __html: marked(message.content) }} />
+                    ) : (
+                      message.role === 'assistant' && isLoading ? '正在思考...' : ''
+                    )}                
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </ScrollArea>
-      </Card>
+              ))}
+            </div>
+          </ScrollArea>
+        </Card>
 
-      <QuickQuestions 
-        onQuestionSelect={sendMessage}
-        disabled={isLoading}
-      />
+        <QuickQuestions
+          onQuestionSelect={sendMessage}
+          disabled={isLoading}
+        />
 
-      <form onSubmit={handleSubmit} className="flex gap-2" id="chat-input">
+        <form onSubmit={handleSubmit} className="flex gap-2" id="chat-input">
           <Input
             value={input}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}

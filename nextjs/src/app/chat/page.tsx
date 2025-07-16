@@ -27,15 +27,8 @@ export default function ChatPage() {
     }
   }, [messages]);
 
-  // 监控 dashscopeSessionId 的变化
-  // useEffect(() => {
-  //   console.log('dashscopeSessionId 状态变化:', dashscopeSessionId);
-  // }, [dashscopeSessionId]);
-
   function parseConcatenatedJson(jsonString: string) {
-    // Split the string by the '}{' pattern, but keep the braces for each part
     const jsonStrings = jsonString.split(/}(?={)/).map(s => {
-      // Add the closing brace back if it was removed by the split
       if (!s.endsWith('}')) {
         return s + '}';
       }
@@ -54,7 +47,6 @@ export default function ChatPage() {
     const userMessage: Message = { role: 'user', content: input };
     setMessages(prev => [...prev, userMessage]);
     
-    // 创建一个空的AI回复消息
     const aiMessage: Message = { role: 'assistant', content: '' };
     setMessages(prev => [...prev, aiMessage]);
     
@@ -84,8 +76,6 @@ export default function ChatPage() {
       while (true) {
         const { value, done } = await reader.read();
         if (done) {
-          console.log('session_id:', session_id);
-          console.log('chat_id:', chat_id);
           setDashscopeSessionId(session_id);
           setCurrentChatId(chat_id);
           break;
@@ -101,13 +91,15 @@ export default function ChatPage() {
             const output = item.output;
             const t = output?.text;
             if (t) {
-              console.log('t:', t);
+              // change t to markdown
+              const markdown = t;
+              // set message content to markdown
               setMessages(prev => {
                 if (prev.length === 0) return prev;
                 // 使用不可变更新，避免对同一对象进行多次原地修改导致的内容重复
                 return prev.map((msg, idx) =>
                   idx === prev.length - 1
-                    ? { ...msg, content: msg.content + t }
+                    ? { ...msg, content: msg.content + markdown }
                     : msg
                 );
               });
@@ -122,6 +114,12 @@ export default function ChatPage() {
           }
         } catch (e) {
           // JSON解析失败，可能是不完整的数据
+          setMessages(prev => {
+            const newMessages = [...prev];
+            const lastMessage = newMessages[newMessages.length - 1];
+            lastMessage.content = '获取数据格式错误，请重试。';
+            return newMessages;
+          });          
           break;
         }      
       }
@@ -130,7 +128,7 @@ export default function ChatPage() {
       setMessages(prev => {
         const newMessages = [...prev];
         const lastMessage = newMessages[newMessages.length - 1];
-        lastMessage.content = '抱歉，发生了错误，请重试。';
+        lastMessage.content = '获取数据失败，请重试。';
         return newMessages;
       });
     } finally {

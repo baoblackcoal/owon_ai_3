@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import ChatSidebar from '@/components/ChatSidebar';
 import { QuickQuestions } from '@/components/QuickQuestions';
 import { MessageActionBar } from '@/components/MessageActionBar';
+import Header from '@/components/Header';
 import { marked } from 'marked';
 
 interface Message {
@@ -67,7 +68,20 @@ export default function ChatPage() {
         }),
       });
 
-      if (!response.ok) throw new Error('请求失败');
+      if (!response.ok) {
+        const errorData = await response.json() as { error?: string };
+        if (response.status === 429) {
+          // 聊天次数限制
+          setMessages(prev => {
+            const newMessages = [...prev];
+            const lastMessage = newMessages[newMessages.length - 1];
+            lastMessage.content = errorData.error || '聊天次数已用完';
+            return newMessages;
+          });
+          return;
+        }
+        throw new Error('请求失败');
+      }
       if (!response.body) throw new Error('没有响应数据');
 
       const reader = response.body.getReader();
@@ -229,19 +243,20 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex h-screen">
-      {/* 左侧边栏 */}
-      <ChatSidebar
-        currentChatId={currentChatId}
-        onChatSelect={handleChatSelect}
-        onNewChat={handleNewChat}
-      />
+    <div className="flex flex-col h-screen">
+      {/* 顶部导航栏 */}
+      <Header />
+      
+      <div className="flex flex-1 overflow-hidden">
+        {/* 左侧边栏 */}
+        <ChatSidebar
+          currentChatId={currentChatId}
+          onChatSelect={handleChatSelect}
+          onNewChat={handleNewChat}
+        />
 
-      {/* 主聊天区域 */}
-      <div className="flex flex-col flex-1 max-w-4xl mx-auto p-4">
-        <div className="mb-4">
-          <h1 className="text-2xl font-bold">AI 助手</h1>
-        </div>
+        {/* 主聊天区域 */}
+        <div className="flex flex-col flex-1 max-w-4xl mx-auto p-4">
 
         <Card className="flex-1 mb-4 p-4 overflow-hidden">
           <ScrollArea className="h-[calc(100vh-200px)]" ref={scrollAreaRef}>
@@ -300,6 +315,7 @@ export default function ChatPage() {
             {isLoading ? '发送中...' : '发送'}
           </Button>
         </form>
+        </div>
       </div>
     </div>
   );

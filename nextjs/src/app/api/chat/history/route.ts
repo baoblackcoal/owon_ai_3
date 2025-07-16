@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { getCurrentUser } from '@/lib/user-utils';
 
 // 获取历史对话列表
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
         const { env } = await getCloudflareContext();
         const db = (env as unknown as { DB?: D1Database }).DB;
@@ -14,12 +15,19 @@ export async function GET() {
             );
         }
 
+        // 获取当前用户
+        const currentUser = await getCurrentUser(request);
+        if (!currentUser) {
+            return NextResponse.json([]);
+        }
+
         const { results } = await db.prepare(`
             SELECT id, title, createdAt, updatedAt, messageCount 
             FROM Chat 
+            WHERE user_id = ?
             ORDER BY updatedAt DESC 
             LIMIT 50
-        `).all();
+        `).bind(currentUser.id).all();
 
         return NextResponse.json(results);
     } catch (error) {
@@ -48,13 +56,22 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // 获取当前用户
+        const currentUser = await getCurrentUser(request);
+        if (!currentUser) {
+            return NextResponse.json(
+                { error: '用户未登录' },
+                { status: 401 }
+            );
+        }
+
         const { title } = await request.json() as CreateChatRequest;
         const chatId = crypto.randomUUID();
 
         await db.prepare(`
-            INSERT INTO Chat (id, title, createdAt, updatedAt, messageCount)
-            VALUES (?, ?, datetime('now'), datetime('now'), 0)
-        `).bind(chatId, title || '新对话').run();
+            INSERT INTO Chat (id, title, user_id, createdAt, updatedAt, messageCount)
+            VALUES (?, ?, ?, datetime('now'), datetime('now'), 0)
+        `).bind(chatId, title || '新对话', currentUser.id).run();
 
         return NextResponse.json({ id: chatId, title: title || '新对话' });
     } catch (error) {

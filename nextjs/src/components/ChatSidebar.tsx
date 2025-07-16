@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -20,6 +21,7 @@ interface ChatSidebarProps {
 }
 
 export default function ChatSidebar({ currentChatId, onChatSelect, onNewChat }: ChatSidebarProps) {
+  const { data: session, status } = useSession();
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -30,17 +32,23 @@ export default function ChatSidebar({ currentChatId, onChatSelect, onNewChat }: 
       if (response.ok) {
         const sessions = await response.json() as ChatSession[];
         setChatSessions(sessions);
+      } else {
+        // 如果未登录，清空聊天历史
+        setChatSessions([]);
       }
     } catch (error) {
       console.error('加载历史对话失败:', error);
+      setChatSessions([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadChatHistory();
-  }, []);
+    if (status !== 'loading') {
+      loadChatHistory();
+    }
+  }, [status]);
 
   // 删除对话
   const handleDeleteChat = async (chatId: string, e: React.MouseEvent) => {
@@ -103,9 +111,13 @@ export default function ChatSidebar({ currentChatId, onChatSelect, onNewChat }: 
 
       {/* 历史对话列表 */}
       <ScrollArea className="flex-1 p-2">
-        {loading ? (
+        {loading || status === 'loading' ? (
           <div className="text-center text-muted-foreground py-4">
             加载中...
+          </div>
+        ) : !session ? (
+          <div className="text-center text-muted-foreground py-4">
+            <p>请登录以查看历史对话</p>
           </div>
         ) : chatSessions.length === 0 ? (
           <div className="text-center text-muted-foreground py-4">

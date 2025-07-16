@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { getCurrentUser } from '@/lib/user-utils';
 
 // 获取特定对话的消息历史
 export async function GET(
@@ -17,18 +18,27 @@ export async function GET(
             );
         }
 
+        // 获取当前用户
+        const currentUser = await getCurrentUser(request);
+        if (!currentUser) {
+            return NextResponse.json(
+                { error: '用户未登录' },
+                { status: 401 }
+            );
+        }
+
         const { chatId } = await params;
 
-        // 获取对话信息
+        // 获取对话信息（验证用户权限）
         const chatResult = await db.prepare(`
             SELECT id, chatId, title, dashscopeSessionId, createdAt, updatedAt
             FROM Chat 
-            WHERE id = ?
-        `).bind(chatId).first();
+            WHERE id = ? AND user_id = ?
+        `).bind(chatId, currentUser.id).first();
 
         if (!chatResult) {
             return NextResponse.json(
-                { error: '对话不存在' },
+                { error: '对话不存在或无权限访问' },
                 { status: 404 }
             );
         }
@@ -37,9 +47,9 @@ export async function GET(
         const { results: messages } = await db.prepare(`
             SELECT id, messageIndex, role, userPrompt, aiResponse, dashscopeSessionId, feedback, timestamp
             FROM ChatMessage 
-            WHERE chatId = ? 
+            WHERE chatId = ? AND user_id = ?
             ORDER BY messageIndex ASC
-        `).bind(chatId).all();
+        `).bind(chatId, currentUser.id).all();
 
         return NextResponse.json({
             chat: chatResult,
@@ -70,13 +80,34 @@ export async function DELETE(
             );
         }
 
+        // 获取当前用户
+        const currentUser = await getCurrentUser(request);
+        if (!currentUser) {
+            return NextResponse.json(
+                { error: '用户未登录' },
+                { status: 401 }
+            );
+        }
+
         const { chatId } = await params;
 
+        // 验证用户权限
+        const chatExists = await db.prepare(`
+            SELECT id FROM Chat WHERE id = ? AND user_id = ?
+        `).bind(chatId, currentUser.id).first();
+
+        if (!chatExists) {
+            return NextResponse.json(
+                { error: '对话不存在或无权限删除' },
+                { status: 404 }
+            );
+        }
+
         // 删除消息
-        await db.prepare(`DELETE FROM ChatMessage WHERE chatId = ?`).bind(chatId).run();
+        await db.prepare(`DELETE FROM ChatMessage WHERE chatId = ? AND user_id = ?`).bind(chatId, currentUser.id).run();
         
         // 删除对话
-        await db.prepare(`DELETE FROM Chat WHERE id = ?`).bind(chatId).run();
+        await db.prepare(`DELETE FROM Chat WHERE id = ? AND user_id = ?`).bind(chatId, currentUser.id).run();
 
         return NextResponse.json({ success: true });
     } catch (error) {

@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 import dotenv from 'dotenv';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { getCurrentUser, createGuestUser, checkAndUpdateChatCount } from '@/lib/user-utils';
 
 // --- Configuration ---
 
@@ -114,9 +115,10 @@ async function fetchDashScopeStream(requestBody: DashScopeRequest): Promise<Read
 
 /**
  * Creates a new chat session in the database.
+ * @param userId - The user ID to associate with the chat session
  * @returns The ID of the newly created chat session.
  */
-async function createNewChatSession(): Promise<string> {
+async function createNewChatSession(userId: string): Promise<string> {
     try {
         const { env } = await getCloudflareContext();
         const db = (env as unknown as { DB?: D1Database }).DB;
@@ -128,9 +130,9 @@ async function createNewChatSession(): Promise<string> {
         const chatId = crypto.randomUUID();
         
         await db.prepare(`
-            INSERT INTO Chat (id, chatId, title, createdAt, updatedAt, messageCount)
-            VALUES (?, ?, ?, datetime('now'), datetime('now'), 0)
-        `).bind(chatId, chatId, '新对话').run();
+            INSERT INTO Chat (id, chatId, title, user_id, createdAt, updatedAt, messageCount)
+            VALUES (?, ?, ?, ?, datetime('now'), datetime('now'), 0)
+        `).bind(chatId, chatId, '新对话', userId).run();
 
         return chatId;
     } catch (error) {
@@ -145,13 +147,15 @@ async function createNewChatSession(): Promise<string> {
  * @param userPrompt The user's input message.
  * @param aiResponse The AI's response.
  * @param dashscopeSessionId The DashScope session ID.
+ * @param userId The user ID.
  * @returns The messageId of the saved message.
  */
 async function saveMessageToDatabase(
     chatId: string, 
     userPrompt: string, 
     aiResponse: string, 
-    dashscopeSessionId: string
+    dashscopeSessionId: string,
+    userId: string
 ): Promise<string> {
     try {
         const { env } = await getCloudflareContext();
@@ -172,9 +176,9 @@ async function saveMessageToDatabase(
         
         // 保存消息
         await db.prepare(`
-            INSERT INTO ChatMessage (id, chatId, messageIndex, role, userPrompt, aiResponse, dashscopeSessionId, feedback, timestamp)
-            VALUES (?, ?, ?, 'user', ?, ?, ?, NULL, datetime('now'))
-        `).bind(messageId, chatId, messageIndex, userPrompt, aiResponse, dashscopeSessionId).run();
+            INSERT INTO ChatMessage (id, chatId, messageIndex, role, userPrompt, aiResponse, dashscopeSessionId, user_id, feedback, timestamp)
+            VALUES (?, ?, ?, 'user', ?, ?, ?, ?, NULL, datetime('now'))
+        `).bind(messageId, chatId, messageIndex, userPrompt, aiResponse, dashscopeSessionId, userId).run();
 
         // 更新对话的最后更新时间、消息数量和dashscopeSessionId
         await db.prepare(`
@@ -213,7 +217,8 @@ async function saveMessageToDatabase(
 function processSseStream(
     responseBody: ReadableStream<Uint8Array>, 
     chatId: string, 
-    userPrompt: string
+    userPrompt: string,
+    userId: string
 ): ReadableStream<Uint8Array> {
     const reader = responseBody.getReader();
     const decoder = new TextDecoder();
@@ -230,7 +235,7 @@ function processSseStream(
                     const { done, value } = await reader.read();
                     if (done) {
                         // 保存消息到数据库
-                        savedMessageId = await saveMessageToDatabase(chatId, userPrompt, aiResponse, newDashscopeSessionId);
+                        savedMessageId = await saveMessageToDatabase(chatId, userPrompt, aiResponse, newDashscopeSessionId, userId);
                         
                         // Send final metadata
                         controller.enqueue(encoder.encode(JSON.stringify({
@@ -291,7 +296,7 @@ function processSseStream(
  * @param request The incoming Next.js request object.
  * @returns A streaming response or a JSON error response.
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
     // 1. Configuration Validation
     if (!dashScopeConfig.apiKey || !dashScopeConfig.appId) {
         return NextResponse.json(
@@ -305,37 +310,75 @@ export async function POST(request: Request) {
         const { message, dashscopeSessionId, chatId } = await request.json() as ClientRequestBody;
         const userPrompt = message;
 
-        // 3. Ensure Chat Session Exists
+        // 3. Get or Create User
+        const currentUser = await getCurrentUser(request);
+        let userId: string;
+        let response: NextResponse | undefined;
+
+        if (!currentUser) {
+            // 创建游客用户
+            const guestResult = await createGuestUser();
+            userId = guestResult.userId;
+            response = guestResult.response;
+        } else {
+            userId = currentUser.id;
+        }
+
+        // 4. Check Chat Count Limit
+        const chatCountResult = await checkAndUpdateChatCount(userId);
+        if (!chatCountResult.canChat) {
+            return NextResponse.json(
+                { 
+                    error: chatCountResult.message,
+                    remainingCount: chatCountResult.remainingCount,
+                    isGuest: chatCountResult.isGuest
+                },
+                { status: 429 }
+            );
+        }
+
+        // 5. Ensure Chat Session Exists
         let actualChatId: string;
         if (chatId) {
             actualChatId = chatId;
         } else {
             // 如果没有提供 chatId，创建新的对话
-            actualChatId = await createNewChatSession();
+            actualChatId = await createNewChatSession(userId);
         }
 
-        // 4. Prepare and Log API Request
+        // 6. Prepare and Log API Request
         const apiRequestBody = createApiRequestBody(userPrompt, dashscopeSessionId);
         console.log('Sending request to DashScope:', {
             url: dashScopeConfig.apiUrl,
             appId: dashScopeConfig.appId,
             userPrompt,
             dashscopeSessionId,
-            chatId: actualChatId
+            chatId: actualChatId,
+            userId
         });
 
-        // 5. Fetch and Process Stream
+        // 7. Fetch and Process Stream
         const apiStream = await fetchDashScopeStream(apiRequestBody);
-        const processedStream = processSseStream(apiStream, actualChatId, userPrompt);
+        const processedStream = processSseStream(apiStream, actualChatId, userPrompt, userId);
 
-        // 6. Return Processed Stream to Client
-        return new Response(processedStream, {
+        // 8. Return Processed Stream to Client
+        const streamResponse = new Response(processedStream, {
             headers: {
                 'Content-Type': 'text/event-stream',
                 'Cache-Control': 'no-cache',
                 'Connection': 'keep-alive'
             }
         });
+
+        // 如果是新创建的游客用户，需要设置cookie
+        if (response) {
+            const cookieHeader = response.headers.get('set-cookie');
+            if (cookieHeader) {
+                streamResponse.headers.set('set-cookie', cookieHeader);
+            }
+        }
+
+        return streamResponse;
 
     } catch (error) {
         console.error('API call failed:', error instanceof Error ? error.message : error);

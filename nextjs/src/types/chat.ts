@@ -50,7 +50,7 @@ export interface ChatContextType {
   isLoading: boolean;
   currentChatId: string;
   dashscopeSessionId: string;
-  sendMessage: (message: string) => Promise<void>;
+  sendMessage: (message: string, instrument?: string, series?: string) => Promise<void>;
   handleNewChat: () => void;
   handleChatSelect: (chatId: string) => Promise<void>;
   handleFeedbackChange: (messageId: string, feedback: 'like' | 'dislike' | null) => Promise<void>;
@@ -65,7 +65,9 @@ export interface ChatHistoryMessage {
 
 export interface ChatHistoryResponse {
   chat: {
-    dashscopeSessionId?: string;
+    id: string;
+    title: string;
+    dashscopeSessionId: string | null;
   };
   messages: ChatHistoryMessage[];
 } 

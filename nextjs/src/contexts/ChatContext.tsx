@@ -17,7 +17,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [currentChatId, setCurrentChatId] = useState<string>('');
   const [dashscopeSessionId, setDashscopeSessionId] = useState<string>('');
 
-  const sendMessage = useCallback(async (message: string) => {
+  const sendMessage = useCallback(async (message: string, instrument: string = 'OSC', series: string = 'ADS800A') => {
     if (!message.trim() || isLoading) return;
 
     const userMessage: Message = { role: 'user', content: message };
@@ -35,7 +35,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({
           message: message,
           chatId: currentChatId,
-          dashscopeSessionId: dashscopeSessionId
+          dashscopeSessionId: dashscopeSessionId,
+          instrument,
+          series
         }),
       });
 

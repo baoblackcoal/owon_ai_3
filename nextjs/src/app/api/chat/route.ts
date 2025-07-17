@@ -3,43 +3,12 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { getCurrentUser, createGuestUser, checkAndUpdateChatCount } from '@/lib/user-utils';
+import { instrumentType } from '@/lib/instrument-config';
 
 // --- Configuration ---
 
 // Immediately load environment variables.
 dotenv.config({ path: path.resolve(__dirname, '../../../../.env.development.local') });
-
-// Utility type & helper to resolve DashScope configuration that works
-// both in Cloudflare Workers (env bindings) and local preview/dev (process.env).
-interface DashScopeConfig {
-    apiKey?: string;
-    appId?: string;
-    apiUrl: string;
-    pipelineIds: string[];
-}
-
-async function resolveDashScopeConfig(): Promise<DashScopeConfig> {
-    // getCloudflareContext() only succeeds when running under Cloudflare (preview or deployed)
-    let bindingEnv: Record<string, string | undefined> = {};
-    try {
-        const { env } = await getCloudflareContext();
-        bindingEnv = env as unknown as Record<string, string | undefined>;
-    } catch {
-        // Ignore – likely running under next dev / node
-    }
-
-    const apiKey = bindingEnv.DASHSCOPE_API_KEY ?? process.env.DASHSCOPE_API_KEY;
-    const appId  = bindingEnv.DASHSCOPE_APP_ID  ?? process.env.DASHSCOPE_APP_ID;
-
-    return {
-        apiKey,
-        appId,
-        apiUrl: `https://dashscope.aliyuncs.com/api/v1/apps/${appId}/completion`,
-        pipelineIds: ["he9rcpebc3", "utmhvnxgey"],
-    };
-}
-
-// Removed obsolete global dashScopeConfig; use resolveDashScopeConfig() instead.
 
 // --- Type Definitions ---
 
@@ -69,6 +38,42 @@ interface ClientRequestBody {
     message: string;
     dashscopeSessionId?: string;
     chatId?: string;
+    instrument?: string;
+    series?: string;
+}
+
+// Utility type & helper to resolve DashScope configuration that works
+// both in Cloudflare Workers (env bindings) and local preview/dev (process.env).
+interface DashScopeConfig {
+    apiKey?: string;
+    appId?: string;
+    apiUrl: string;
+    pipelineIds: string[];
+}
+
+async function resolveDashScopeConfig(instrument: string = 'OSC', series: string = 'ADS800A'): Promise<DashScopeConfig> {
+    // getCloudflareContext() only succeeds when running under Cloudflare (preview or deployed)
+    let bindingEnv: Record<string, string | undefined> = {};
+    try {
+        const { env } = await getCloudflareContext();
+        bindingEnv = env as unknown as Record<string, string | undefined>;
+    } catch {
+        // Ignore – likely running under next dev / node
+    }
+
+    const apiKey = bindingEnv.DASHSCOPE_API_KEY ?? process.env.DASHSCOPE_API_KEY;
+    const appId  = bindingEnv.DASHSCOPE_APP_ID  ?? process.env.DASHSCOPE_APP_ID;
+
+    // Get pipeline IDs based on selected instrument and series
+    const selectedInstrument = instrumentType[instrument];
+    const pipelineIds = selectedInstrument?.pipelineIds[series] ?? ["he9rcpebc3", "utmhvnxgey"];
+
+    return {
+        apiKey,
+        appId,
+        apiUrl: `https://dashscope.aliyuncs.com/api/v1/apps/${appId}/completion`,
+        pipelineIds,
+    };
 }
 
 // --- API Interaction Logic ---
@@ -323,20 +328,20 @@ function processSseStream(
  * @returns A streaming response or a JSON error response.
  */
 export async function POST(request: NextRequest) {
-    // 1. Resolve DashScope configuration (supports Cloudflare bindings & local env)
-    const dashScopeConfig = await resolveDashScopeConfig();
-
-    if (!dashScopeConfig.apiKey || !dashScopeConfig.appId) {
-        return NextResponse.json(
-            { error: 'Server not configured: DASHSCOPE_API_KEY or DASHSCOPE_APP_ID is missing.' },
-            { status: 500 }
-        );
-    }
-
     try {
         // 2. Parse Incoming Request
-        const { message, dashscopeSessionId, chatId } = await request.json() as ClientRequestBody;
+        const { message, dashscopeSessionId, chatId, instrument = 'OSC', series = 'ADS800A' } = await request.json() as ClientRequestBody;
         const userPrompt = message;
+
+        // 1. Resolve DashScope configuration (supports Cloudflare bindings & local env)
+        const dashScopeConfig = await resolveDashScopeConfig(instrument, series);
+
+        if (!dashScopeConfig.apiKey || !dashScopeConfig.appId) {
+            return NextResponse.json(
+                { error: 'Server not configured: DASHSCOPE_API_KEY or DASHSCOPE_APP_ID is missing.' },
+                { status: 500 }
+            );
+        }
 
         // 3. Get or Create User
         const currentUser = await getCurrentUser(request);

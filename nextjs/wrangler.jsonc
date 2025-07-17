@@ -17,7 +17,8 @@
   "upload_source_maps": true,
 
   "vars": {
-    "BCRYPT_SALT_ROUNDS": "12"
+    "BCRYPT_SALT_ROUNDS": "12",
+    "NEXTAUTH_URL": "https://owonai.top"
   },
   
   "d1_databases": [

@@ -1,19 +1,28 @@
-interface CloudflareEnv {
+// 定义环境变量类型
+interface EnvVars {
   NEXTAUTH_URL?: string;
   NEXTAUTH_SECRET?: string;
   DASHSCOPE_API_KEY?: string;
   DASHSCOPE_APP_ID?: string;
   BCRYPT_SALT_ROUNDS?: string;
+  [key: string]: string | undefined;
 }
 
-interface Env extends CloudflareEnv {
-  DB: D1Database;
+// Cloudflare Workers 环境类型
+interface CloudflareEnv {
+  env: EnvVars & {
+    DB?: D1Database;
+  };
 }
 
 export async function getCloudflareContext() {
-  // @ts-expect-error Cloudflare bindings
-  const env = process?.env ?? globalThis?.process?.env;
-  return { env } as { env: Env };
+  try {
+    // 尝试获取 Cloudflare Workers 环境
+    return (globalThis as unknown as CloudflareEnv);
+  } catch {
+    // 如果失败，返回 Node.js 环境
+    return { env: process.env };
+  }
 }
 
 export async function resolveConfig() {
@@ -41,7 +50,7 @@ export function assertEnvVars() {
     'NEXTAUTH_SECRET',
     'DASHSCOPE_API_KEY',
     'DASHSCOPE_APP_ID',
-  ];
+  ] as const;
 
   for (const envVar of requiredEnvVars) {
     if (!process.env[envVar] && process.env.NODE_ENV === 'production') {

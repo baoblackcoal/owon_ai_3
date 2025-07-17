@@ -16,6 +16,9 @@
   },
   "upload_source_maps": true,
 
+  "vars": {
+    "BCRYPT_SALT_ROUNDS": "12"
+  },
   
   "d1_databases": [
     {

@@ -112,3 +112,11 @@
 - 所有 API 调用与错误处理应使用显式类型，错误捕获使用 `unknown`，并通过 `instanceof Error` 判断。
 - 严禁使用 `any`，必须为 API 响应和数据结构定义精确的接口类型。
 - 使用 `useCallback`、`useMemo` 等优化性能，避免不必要的重渲染。
+
+# Cloudflare 部署经验
+- 正式部署到 Workers 时，普通环境变量不会自动注入 `process.env`，应通过 `getCloudflareContext().env` 读取绑定（如 `const { env } = await getCloudflareContext();`）。
+- 为兼容本地 `next dev` / `opennextjs-cloudflare preview` 与线上部署，可采用模式：`const value = env.KEY ?? process.env.KEY;`。
+- 不要在模块顶层直接建立依赖 `process.env` 的配置常量；推荐写成异步解析函数（例如 `resolveDashScopeConfig()`），在请求处理函数内调用，确保拿到 Cloudflare 绑定并避免类型错误。
+- 部署域名必须写入 `NEXTAUTH_URL`，并包含协议，例如 `https://owonai.top`，否则 NextAuth 在浏览器端的 cookie 域校验会失败。
+- 若使用 NextAuth v5 + Workers，需设置 `trustHost: true` 以让 NextAuth 在 Cloudflare 平台正确推断 URL。
+- Preview 环境(`opennextjs-cloudflare preview`) 会把变量注入 `process.env`，但正式部署不会；切勿依据 preview 行为做生产判断。

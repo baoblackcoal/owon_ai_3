@@ -9,17 +9,37 @@ import { getCurrentUser, createGuestUser, checkAndUpdateChatCount } from '@/lib/
 // Immediately load environment variables.
 dotenv.config({ path: path.resolve(__dirname, '../../../../.env.development.local') });
 
-/**
- * Configuration object for the DashScope API.
- * It's good practice to centralize configuration and provide clear error messages
- * if essential variables are missing.
- */
-const dashScopeConfig = {
-    apiKey: process.env.DASHSCOPE_API_KEY,
-    appId: process.env.DASHSCOPE_APP_ID,
-    apiUrl: `https://dashscope.aliyuncs.com/api/v1/apps/${process.env.DASHSCOPE_APP_ID}/completion`,
-    pipelineIds: ['he9rcpebc3', 'utmhvnxgey']
-};
+// Utility type & helper to resolve DashScope configuration that works
+// both in Cloudflare Workers (env bindings) and local preview/dev (process.env).
+interface DashScopeConfig {
+    apiKey?: string;
+    appId?: string;
+    apiUrl: string;
+    pipelineIds: string[];
+}
+
+async function resolveDashScopeConfig(): Promise<DashScopeConfig> {
+    // getCloudflareContext() only succeeds when running under Cloudflare (preview or deployed)
+    let bindingEnv: Record<string, string | undefined> = {};
+    try {
+        const { env } = await getCloudflareContext();
+        bindingEnv = env as unknown as Record<string, string | undefined>;
+    } catch {
+        // Ignore – likely running under next dev / node
+    }
+
+    const apiKey = bindingEnv.DASHSCOPE_API_KEY ?? process.env.DASHSCOPE_API_KEY;
+    const appId  = bindingEnv.DASHSCOPE_APP_ID  ?? process.env.DASHSCOPE_APP_ID;
+
+    return {
+        apiKey,
+        appId,
+        apiUrl: `https://dashscope.aliyuncs.com/api/v1/apps/${appId}/completion`,
+        pipelineIds: ["he9rcpebc3", "utmhvnxgey"],
+    };
+}
+
+// Removed obsolete global dashScopeConfig; use resolveDashScopeConfig() instead.
 
 // --- Type Definitions ---
 
@@ -60,7 +80,11 @@ interface ClientRequestBody {
  * @param dashscopeSessionId Optional session ID for conversational context.
  * @returns A fully formed DashScopeRequest object.
  */
-function createApiRequestBody(message: string, dashscopeSessionId?: string): DashScopeRequest {
+function createApiRequestBody(
+    message: string,
+    config: DashScopeConfig,
+    dashscopeSessionId?: string
+): DashScopeRequest {
     return {
         input: {
             prompt: message,
@@ -70,7 +94,7 @@ function createApiRequestBody(message: string, dashscopeSessionId?: string): Das
             incremental_output: 'true',
             has_thoughts: 'true',
             rag_options: {
-                pipeline_ids: dashScopeConfig.pipelineIds
+                pipeline_ids: config.pipelineIds
             }
         },
         debug: {}
@@ -84,15 +108,18 @@ function createApiRequestBody(message: string, dashscopeSessionId?: string): Das
  * @returns The readable stream from the API response.
  * @throws An error if the API key is missing or the request fails.
  */
-async function fetchDashScopeStream(requestBody: DashScopeRequest): Promise<ReadableStream<Uint8Array>> {
-    if (!dashScopeConfig.apiKey) {
+async function fetchDashScopeStream(
+    config: DashScopeConfig,
+    requestBody: DashScopeRequest
+): Promise<ReadableStream<Uint8Array>> {
+    if (!config.apiKey) {
         throw new Error("DASHSCOPE_API_KEY is not configured.");
     }
 
-    const response = await fetch(dashScopeConfig.apiUrl, {
+    const response = await fetch(config.apiUrl, {
         method: 'POST',
         headers: {
-            'Authorization': `Bearer ${dashScopeConfig.apiKey}`,
+            'Authorization': `Bearer ${config.apiKey}`,
             'Content-Type': 'application/json',
             'Accept': 'text/event-stream',
             'X-DashScope-SSE': 'enable'
@@ -296,7 +323,9 @@ function processSseStream(
  * @returns A streaming response or a JSON error response.
  */
 export async function POST(request: NextRequest) {
-    // 1. Configuration Validation
+    // 1. Resolve DashScope configuration (supports Cloudflare bindings & local env)
+    const dashScopeConfig = await resolveDashScopeConfig();
+
     if (!dashScopeConfig.apiKey || !dashScopeConfig.appId) {
         return NextResponse.json(
             { error: 'Server not configured: DASHSCOPE_API_KEY or DASHSCOPE_APP_ID is missing.' },
@@ -346,7 +375,7 @@ export async function POST(request: NextRequest) {
         }
 
         // 6. Prepare and Log API Request
-        const apiRequestBody = createApiRequestBody(userPrompt, dashscopeSessionId);
+        const apiRequestBody = createApiRequestBody(userPrompt, dashScopeConfig, dashscopeSessionId);
         console.log('Sending request to DashScope:', {
             url: dashScopeConfig.apiUrl,
             appId: dashScopeConfig.appId,
@@ -357,7 +386,7 @@ export async function POST(request: NextRequest) {
         });
 
         // 7. Fetch and Process Stream
-        const apiStream = await fetchDashScopeStream(apiRequestBody);
+        const apiStream = await fetchDashScopeStream(dashScopeConfig, apiRequestBody);
         const processedStream = processSseStream(apiStream, actualChatId, userPrompt, userId);
 
         // 8. Return Processed Stream to Client

@@ -4,39 +4,42 @@ import { Input } from "@/components/ui/input";
 import { QuickQuestions } from './QuickQuestions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { instrumentType } from '@/lib/instrument-config';
+import { useChatContext } from '@/contexts/ChatContext'; // import the context
 
 interface ChatInputProps {
-  onSendMessage: (message: string, instrument: string, series: string) => Promise<void>;
+  onSendMessage: (message: string) => Promise<void>; // change: no longer takes instrument and series
   isLoading: boolean;
 }
 
 export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
   const [input, setInput] = useState('');
-  const [selectedInstrument, setSelectedInstrument] = useState('OSC');
-  const [selectedSeries, setSelectedSeries] = useState('ADS800A');
+  // Use the context for instrument and series and their setters
+  const { instrument, series, setInstrumentSeries } = useChatContext();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    await onSendMessage(input, selectedInstrument, selectedSeries);
+    await onSendMessage(input); // now onSendMessage only takes the message
     setInput('');
   };
 
   // Get available series for the selected instrument
   const getAvailableSeries = () => {
-    const instrument = instrumentType[selectedInstrument];
-    return instrument ? Object.keys(instrument.pipelineIds) : [];
+    const inst = instrumentType[instrument];
+    return inst ? Object.keys(inst.pipelineIds) : [];
   };
 
   // Handle instrument change
   const handleInstrumentChange = (value: string) => {
-    setSelectedInstrument(value);
-    // Reset series to first available option for new instrument
     const availableSeries = Object.keys(instrumentType[value].pipelineIds);
-    setSelectedSeries(availableSeries[0]);
+    setInstrumentSeries(value, availableSeries[0]);
+  };
+
+  const handleSeriesChange = (value: string) => {
+    setInstrumentSeries(instrument, value);
   };
 
   const handleQuickQuestionSelect = async (question: string) => {
-    await onSendMessage(question, selectedInstrument, selectedSeries);
+    await onSendMessage(question);
   };
 
   return (
@@ -48,7 +51,7 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
 
       <div className="flex gap-2">
         <Select
-          value={selectedInstrument}
+          value={instrument}
           onValueChange={handleInstrumentChange}
           disabled={isLoading}
         >
@@ -65,17 +68,17 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
         </Select>
 
         <Select
-          value={selectedSeries}
-          onValueChange={setSelectedSeries}
+          value={series}
+          onValueChange={handleSeriesChange}
           disabled={isLoading}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="选择系列" />
           </SelectTrigger>
           <SelectContent>
-            {getAvailableSeries().map((series) => (
-              <SelectItem key={series} value={series}>
-                {series}
+            {getAvailableSeries().map((s) => (
+              <SelectItem key={s} value={s}>
+                {s}
               </SelectItem>
             ))}
           </SelectContent>

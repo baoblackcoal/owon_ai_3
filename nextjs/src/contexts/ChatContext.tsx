@@ -16,8 +16,18 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [currentChatId, setCurrentChatId] = useState<string>('');
   const [dashscopeSessionId, setDashscopeSessionId] = useState<string>('');
+  // Add state for instrument and series
+  const [instrument, setInstrument] = useState<string>('OSC');
+  const [series, setSeries] = useState<string>('ADS800A');
 
-  const sendMessage = useCallback(async (message: string, instrument: string = 'OSC', series: string = 'ADS800A') => {
+  // Add setter for instrument and series
+  const setInstrumentSeries = useCallback((newInstrument: string, newSeries: string) => {
+    setInstrument(newInstrument);
+    setSeries(newSeries);
+  }, []);
+
+  // Update sendMessage to use context values
+  const sendMessage = useCallback(async (message: string) => {
     if (!message.trim() || isLoading) return;
 
     const userMessage: Message = { role: 'user', content: message };
@@ -36,8 +46,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           message: message,
           chatId: currentChatId,
           dashscopeSessionId: dashscopeSessionId,
-          instrument,
-          series
+          instrument,   // Use context value
+          series        // Use context value
         }),
       });
 
@@ -129,7 +139,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [currentChatId, dashscopeSessionId, isLoading]);
+  }, [currentChatId, dashscopeSessionId, isLoading, instrument, series]); // add instrument and series to dependencies
 
   const handleNewChat = useCallback(() => {
     setMessages([]);
@@ -194,6 +204,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     handleNewChat,
     handleChatSelect,
     handleFeedbackChange,
+    // Add instrument and series and their setters
+    instrument,
+    series,
+    setInstrumentSeries
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

@@ -1,6 +1,7 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import ChatSidebar from '@/components/ChatSidebar';
@@ -8,6 +9,8 @@ import Header from '@/components/Header';
 import { ChatProvider, useChatContext } from '@/contexts/ChatContext';
 import { ChatMessage } from '@/components/ChatMessage';
 import { ChatInput } from '@/components/ChatInput';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { instrumentType } from '@/lib/instrument-config';
 
 function ChatArea() {
   const { messages, isLoading, handleFeedbackChange } = useChatContext();
@@ -40,7 +43,38 @@ function ChatArea() {
 }
 
 function ChatPageContent() {
-  const { currentChatId, sendMessage, handleChatSelect, handleNewChat, isLoading } = useChatContext();
+  const { 
+    currentChatId, 
+    sendMessage, 
+    handleChatSelect, 
+    handleNewChat, 
+    isLoading,
+    instrument,
+    series,
+    setInstrumentSeries
+  } = useChatContext();
+  
+  const searchParams = useSearchParams();
+  const [showInstrumentModal, setShowInstrumentModal] = useState(false);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  // Handle URL parameters on initial load
+  useEffect(() => {
+    const urlInstrument = searchParams.get('instrument');
+    const urlSeries = searchParams.get('series');
+    
+    if (urlInstrument && urlSeries) {
+      // Validate against instrument config
+      const isValidInstrument = Object.keys(instrumentType).includes(urlInstrument);
+      const isValidSeries = isValidInstrument && 
+                           Object.keys(instrumentType[urlInstrument].pipelineIds).includes(urlSeries);
+      
+      if (isValidInstrument && isValidSeries) {
+        setInstrumentSeries(urlInstrument, urlSeries);
+        setShowInstrumentModal(true);
+      }
+    }
+  }, [searchParams, setInstrumentSeries]);
 
   return (
     <div className="flex flex-col h-screen">
@@ -58,6 +92,19 @@ function ChatPageContent() {
           <ChatInput onSendMessage={sendMessage} isLoading={isLoading} />
         </div>
       </div>
+
+      {/* Instrument Info Dialog */}
+      <Dialog open={showInstrumentModal} onOpenChange={() => setShowInstrumentModal(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>仪器信息</DialogTitle>
+          </DialogHeader>
+          <DialogDescription>
+            您的仪器是{instrumentType[instrument]?.name}，系列是{series}，
+            AI对话将会使用相关知识库。
+          </DialogDescription>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

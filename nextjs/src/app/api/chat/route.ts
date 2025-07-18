@@ -42,6 +42,16 @@ interface ClientRequestBody {
     series?: string;
 }
 
+// Add validation function
+function validateInstrumentSeries(instrument?: string, series?: string): boolean {
+  if (!instrument || !series) return false;
+  
+  const instrumentConfig = instrumentType[instrument];
+  if (!instrumentConfig) return false;
+  
+  return Object.keys(instrumentConfig.pipelineIds).includes(series);
+}
+
 // Utility type & helper to resolve DashScope configuration that works
 // both in Cloudflare Workers (env bindings) and local preview/dev (process.env).
 interface DashScopeConfig {
@@ -332,6 +342,16 @@ export async function POST(request: NextRequest) {
         // 2. Parse Incoming Request
         const { message, dashscopeSessionId, chatId, instrument = 'OSC', series = 'ADS800A' } = await request.json() as ClientRequestBody;
         const userPrompt = message;
+
+        // Validate instrument/series
+        if (!validateInstrumentSeries(instrument, series)) {
+            return new Response(JSON.stringify({ 
+                error: 'Invalid instrument or series specified' 
+            }), {
+                status: 400,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
 
         // 1. Resolve DashScope configuration (supports Cloudflare bindings & local env)
         const dashScopeConfig = await resolveDashScopeConfig(instrument, series);

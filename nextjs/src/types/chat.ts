@@ -50,7 +50,12 @@ export interface ChatContextType {
   isLoading: boolean;
   currentChatId: string;
   dashscopeSessionId: string;
-  sendMessage: (message: string, instrument?: string, series?: string) => Promise<void>;
+  // 仪器和系列相关
+  instrument: string;
+  series: string;
+  setInstrumentSeries: (instrument: string, series: string) => void;
+  // 聊天相关方法
+  sendMessage: (message: string) => Promise<void>;
   handleNewChat: () => void;
   handleChatSelect: (chatId: string) => Promise<void>;
   handleFeedbackChange: (messageId: string, feedback: 'like' | 'dislike' | null) => Promise<void>;

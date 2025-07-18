@@ -76,6 +76,16 @@
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
+
+  /* 自定义设计变量 */
+  --chat-bubble-user: oklch(0.208 0.042 265.755);
+  --chat-bubble-assistant: oklch(0.968 0.007 247.896);
+  --animation-fast: 150ms;
+  --animation-normal: 200ms;
+  --animation-slow: 300ms;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 }
 
 .dark {
@@ -110,6 +120,13 @@
   --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.551 0.027 264.364);
+
+  /* 深色模式自定义变量 */
+  --chat-bubble-user: oklch(0.488 0.243 264.376);
+  --chat-bubble-assistant: oklch(0.279 0.041 260.031);
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.3);
 }
 
 @layer base {
@@ -118,5 +135,172 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  /* 聊天气泡样式 */
+  .chat-bubble-user {
+    background: var(--chat-bubble-user);
+    color: white;
+    border-radius: 18px 18px 4px 18px;
+    box-shadow: var(--shadow-sm);
+  }
+  
+  .chat-bubble-assistant {
+    background: var(--chat-bubble-assistant);
+    border-radius: 18px 18px 18px 4px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+  }
+
+  /* 侧边栏动画 */
+  .sidebar-transition {
+    transition: width var(--animation-slow) cubic-bezier(0.4, 0, 0.2, 1),
+                transform var(--animation-slow) cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* 消息动画 */
+  .message-enter {
+    animation: messageSlideIn var(--animation-normal) ease-out;
+  }
+
+  /* 加载动画 */
+  .loading-dots {
+    animation: loadingDots 1.4s infinite;
+  }
+
+  .loading-dots::after {
+    content: '';
+    animation: loadingDots 1.4s infinite;
+  }
+
+  /* 按钮悬停效果增强 */
+  .button-enhanced {
+    transition: all var(--animation-fast) ease-in-out;
+    transform: translateY(0);
+  }
+
+  .button-enhanced:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .button-enhanced:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* 卡片悬停效果 */
+  .card-hover {
+    transition: all var(--animation-normal) ease-in-out;
+  }
+
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* 焦点可见性增强 */
+  .focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  /* 滚动条样式 */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--muted);
+    border-radius: 3px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--muted-foreground);
+  }
+}
+
+@layer utilities {
+  /* 响应式文本大小 */
+  .text-responsive-sm {
+    @apply text-sm sm:text-base;
+  }
+  
+  .text-responsive-lg {
+    @apply text-lg sm:text-xl;
+  }
+
+  /* 触摸优化 */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* 渐变背景 */
+  .gradient-primary {
+    background: linear-gradient(135deg, var(--primary), var(--primary-foreground));
+  }
+}
+
+/* 关键帧动画 */
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes loadingDots {
+  0%, 80%, 100% {
+    opacity: 0.3;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* 减少动画的偏好设置 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

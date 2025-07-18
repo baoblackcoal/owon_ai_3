@@ -21,7 +21,7 @@ function ChatArea() {
   }, [messages]);
 
   return (
-    <Card className="flex-1 mb-4 p-4 overflow-hidden">
+    <div className="flex-1 mb-4 p-4 overflow-hidden">
       <ScrollArea className="h-[calc(100vh-200px)]" ref={scrollAreaRef}>
         <div className="space-y-4">
           {messages.map((message, index) => (
@@ -35,7 +35,7 @@ function ChatArea() {
           ))}
         </div>
       </ScrollArea>
-    </Card>
+    </div>
   );
 }
 
@@ -44,7 +44,6 @@ function ChatPageContent() {
 
   return (
     <div className="flex flex-col h-screen">
-      <Header />
       
       <div className="flex flex-1 overflow-hidden">
         <ChatSidebar
@@ -54,6 +53,7 @@ function ChatPageContent() {
         />
 
         <div className="flex flex-col flex-1 max-w-4xl mx-auto p-4">
+          <Header />
           <ChatArea />
           <ChatInput onSendMessage={sendMessage} isLoading={isLoading} />
         </div>

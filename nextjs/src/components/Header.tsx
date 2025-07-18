@@ -22,7 +22,7 @@ export default function Header() {
   };
 
   return (
-    <header className="h-16 border-b bg-background px-4 flex items-center justify-between">
+    <header className=" border-b bg-background px-4 flex items-center justify-between">
       <div className="flex items-center space-x-4">
         <h1 className="text-xl font-semibold">OWON AI</h1>
       </div>

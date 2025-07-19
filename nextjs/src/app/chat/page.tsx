@@ -24,11 +24,15 @@ function ChatArea() {
     }
   }, [messages]);
 
-  // 常用问题
-  const commonQuestions = [
-    "你有什么功能？",
-    "ADS800的带宽是多少？", 
-    "如何进行示波器校准？"
+  interface CommonQuestion {
+    text: string;
+    icon: string;
+  }
+  
+  const COMMON_QUESTIONS: CommonQuestion[] = [
+    { text: "幅度是怎么计算？", icon: "📏"},
+    { text: "如何使用光标测量？", icon: "📊"},
+    { text: "如何进行示波器校准？", icon: "🔧"},
   ];
 
   const handleQuestionClick = async (question: string) => {
@@ -63,16 +67,16 @@ function ChatArea() {
                 
                 <div className="space-y-4">                
                   <div className="grid gap-3">
-                    {commonQuestions.map((question, index) => (
+                    {COMMON_QUESTIONS.map((question, index) => (
                       <button
                         key={index}
-                        onClick={() => handleQuestionClick(question)}
+                        onClick={() => handleQuestionClick(question.text)}
                         disabled={isLoading}
                         className="p-4 bg-muted hover:bg-muted/80 rounded-lg text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <div className="flex items-center">
-                          <span className="text-primary mr-3">❓</span>
-                          <span className="text-foreground">{question}</span>
+                          <span className="text-primary mr-3">{question.icon}</span>
+                          <span className="text-foreground">{question.text}</span>
                         </div>
                       </button>
                     ))}
@@ -83,7 +87,7 @@ function ChatArea() {
           </div>
         ) : (
           // 聊天消息列表
-          <div className="space-y-4" id="chat-message-area">
+          <div className="space-y-4 pt-4" id="chat-message-area">
             {messages.map((message, index) => (
               <ChatMessage
                 key={index}

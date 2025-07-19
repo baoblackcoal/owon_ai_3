@@ -78,7 +78,7 @@
   --sidebar-ring: oklch(0.704 0.04 256.788);
 
   /* 自定义设计变量 */
-  --chat-bubble-user: oklch(0.208 0.042 265.755);
+  --chat-bubble-user: oklch(0.9244 0.0095 265.755);
   --chat-bubble-assistant: oklch(0.968 0.007 247.896);
   --animation-fast: 150ms;
   --animation-normal: 200ms;
@@ -143,14 +143,13 @@
   /* 聊天气泡样式 */
   .chat-bubble-user {
     background: var(--chat-bubble-user);
-    color: white;
-    border-radius: 18px 18px 4px 18px;
+    border-radius: 12px;
     box-shadow: var(--shadow-sm);
   }
   
   .chat-bubble-assistant {
     background: var(--chat-bubble-assistant);
-    border-radius: 18px 18px 18px 4px;
+    border-radius: 12px;
     box-shadow: var(--shadow-sm);
     border: 1px solid var(--border);
   }

@@ -55,10 +55,10 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
   return (
     <div className="space-y-4">
       {/* 测试问题 */}
-      <TestQuestions
+      {/* <TestQuestions
         onQuestionSelect={handleTestQuestionSelect}
         disabled={isLoading}
-      />
+      /> */}
 
       {/* 两行输入区域 */}
       <div className="space-y-3" id="chat-input">

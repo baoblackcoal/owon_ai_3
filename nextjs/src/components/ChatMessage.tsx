@@ -30,23 +30,20 @@ export function ChatMessage({ message, index, isLoading, onFeedbackChange }: Cha
   return (
     <div className={`
       flex items-start gap-3 message-enter
-      ${isUser ? 'flex-row-reverse' : 'flex-row'}
+      ${isUser ? 'flex-row-reverse justify-start' : 'flex-row'}
       ${deviceType === 'mobile' ? 'mx-2' : 'mx-4'}
     `}>
       {/* 消息内容 */}
       <div className={`
-        flex-1 max-w-none
-        ${deviceType === 'mobile' ? 'max-w-[calc(100%-1rem)]' : 'max-w-[85%]'}
+        ${isUser ? 'max-w-[70%]' : 'w-full'}
+        ${deviceType === 'mobile' ? 'max-w-[calc(100%-1rem)]' : ''}
       `}>
         {/* 消息气泡 */}
         <div
           className={`
-            p-3 text-responsive-sm
-            ${deviceType === 'mobile' ? 'p-3' : 'p-4'}
             ${isUser 
-              ? 'chat-bubble-user ml-auto' 
-              : 'chat-bubble-assistant'
-            }
+              ? 'bg-primary text-primary-foreground rounded-lg inline-block ml-auto p-4' 
+              : 'text-foreground'}
             ${!message.content && isAssistant && isLoading ? 'animate-pulse' : ''}
           `}
           id={isUser ? `user-message-${index}` : `assistant-message-${index}`}
@@ -57,8 +54,8 @@ export function ChatMessage({ message, index, isLoading, onFeedbackChange }: Cha
                 prose prose-sm max-w-none
                 ${isUser ? 'prose-invert' : 'dark:prose-invert'}
                 prose-p:my-2 prose-p:leading-relaxed
-                prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded
-                prose-pre:bg-muted prose-pre:border
+                prose-code:bg-muted/50 prose-code:px-1 prose-code:py-0.5 prose-code:rounded
+                prose-pre:bg-muted/50 prose-pre:border
               `}
               dangerouslySetInnerHTML={{ __html: marked(message.content) }} 
             />

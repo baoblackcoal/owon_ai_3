@@ -167,30 +167,25 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
             }}
             disabled={isLoading || !input.trim()}
             className={`
-              button-enhanced touch-target
+              button-enhanced touch-target rounded-full
               ${deviceType === 'mobile' 
                 ? 'h-11 w-11 p-0' 
                 : 'h-10 px-4 gap-2'
               }
             `}
+            title={isLoading ? "发送中" : "发送"}
           >
             {isLoading ? (
               deviceType === 'mobile' ? (
                 <Square className="h-5 w-5" />
               ) : (
-                <>
-                  <Square className="h-4 w-4" />
-                  发送中
-                </>
+                <Square className="h-4 w-4" />
               )
             ) : (
               deviceType === 'mobile' ? (
                 <ArrowUp className="h-5 w-5" />
               ) : (
-                <>
-                  <ArrowUp className="h-4 w-4" />
-                  发送
-                </>
+                <ArrowUp className="h-4 w-4" />
               )
             )}
           </Button>

@@ -47,11 +47,11 @@ export default function Header() {
           <Image
             src="/logo.png"
             alt="OWON Logo"
-            width={32}
+            width={48}
             height={32}
-            className="w-8 h-8"
+            className="h-8 w-auto"
           />
-          <h1 className="text-xl font-semibold text-primary">OWON AI</h1>
+          {/* <h1 className="text-xl font-semibold text-primary">OWON AI 助手</h1> */}
         </div>
       </div>
 

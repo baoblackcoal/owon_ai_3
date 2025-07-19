@@ -228,45 +228,43 @@ function SidebarContent({
   return (
     <>
       {/* 头部 */}
-      <div className="p-4 border-b flex items-center justify-between">
+      <div className="p-4 border-b flex flex-col gap-2">
         {/* 桌面端侧边栏折叠/展开按钮 */}
         {!showCloseButton && (
           <Button
+            id="toggle-sidebar"
             variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0"
+            className={!sidebarCollapsed ? "w-full" : "h-10 w-10 p-0"}
             onClick={toggleSidebar}
             aria-label={sidebarCollapsed ? "展开侧边栏" : "收起侧边栏"}
           >
-            {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-          </Button>
-        )}
-
-        {showCloseButton && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0"
-            onClick={onClose}
-          >
-            <X className="h-4 w-4" />
+            {sidebarCollapsed ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <>
+                <ChevronLeft className="h-4 w-4 mr-2" />
+                收起侧边栏
+              </>
+            )}
           </Button>
         )}
         
         {!sidebarCollapsed ? (
           <Button 
+            id="new-chat"
             onClick={onNewChat}
-            className="flex-1 ml-2"
-            variant="default"
+            className="w-full"
+            variant="ghost"
           >
             <Plus className="h-4 w-4 mr-2" />
             发起新对话
           </Button>
         ) : (
           <Button 
+            id="new-chat"
             onClick={onNewChat}
             className="h-10 w-10 p-0"
-            variant="default"
+            variant="ghost"
             title="发起新对话"
           >
             <Plus className="h-4 w-4" />

@@ -82,8 +82,6 @@ export function useKeyboardNavigation(options: KeyboardNavigationOptions) {
 
 // 焦点管理 Hook
 export function useFocusManagement() {
-  const focusableElementsRef = useRef<HTMLElement[]>([]);
-
   // 获取页面上所有可焦点元素
   const getFocusableElements = (): HTMLElement[] => {
     const selectors = [

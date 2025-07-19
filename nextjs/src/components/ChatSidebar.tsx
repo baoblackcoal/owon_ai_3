@@ -200,7 +200,8 @@ export default function ChatSidebar({ currentChatId, onChatSelect, onNewChat }: 
 interface SidebarContentProps {
   loading: boolean;
   status: string;
-  session: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  session: any;  // 由于 NextAuth v5 beta 版本的类型兼容性问题，暂时使用 any
   chatSessions: ChatSession[];
   currentChatId?: string;
   sidebarCollapsed: boolean;

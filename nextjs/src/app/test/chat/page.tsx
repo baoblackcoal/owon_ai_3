@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import { ChatInput } from '@/components/ChatInput';
 import { Message, DashScopeResponse, MetadataResponse } from '@/types/chat';
 import { parseConcatenatedJson } from '@/lib/chat-utils';
+import { ChatProvider } from '@/contexts/ChatContext';
+import { UIProvider } from '@/contexts/UIContext';
 
-export default function ChatPage() {
+function ChatPageContent() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [chatId, setChatId] = useState<string>('');
@@ -155,5 +157,15 @@ export default function ChatPage() {
 
       <ChatInput onSendMessage={sendMessage} isLoading={isLoading} />
     </div>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <UIProvider>
+      <ChatProvider>
+        <ChatPageContent />
+      </ChatProvider>
+    </UIProvider>
   );
 } 

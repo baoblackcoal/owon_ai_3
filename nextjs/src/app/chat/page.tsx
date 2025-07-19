@@ -1,8 +1,7 @@
 'use client';
 
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import ChatSidebar from '@/components/ChatSidebar';
 import Header from '@/components/Header';
@@ -56,6 +55,14 @@ function ChatArea() {
 }
 
 function ChatPageContent() {
+  return (
+    <Suspense fallback={null}>
+      <ChatPageInner />
+    </Suspense>
+  );
+}
+
+function ChatPageInner() {
   const { 
     currentChatId, 
     sendMessage, 
@@ -67,7 +74,7 @@ function ChatPageContent() {
     setInstrumentSeries
   } = useChatContext();
   
-  const { deviceType, sidebarCollapsed } = useUI();
+  const { deviceType } = useUI();
   const searchParams = useSearchParams();
   const [showInstrumentModal, setShowInstrumentModal] = useState(false);
 

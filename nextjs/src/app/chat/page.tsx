@@ -2,7 +2,6 @@
 
 import { useRef, useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { ScrollArea } from "@/components/ui/scroll-area";
 import ChatSidebar from '@/components/ChatSidebar';
 import Header from '@/components/Header';
 import { ChatProvider, useChatContext } from '@/contexts/ChatContext';
@@ -44,19 +43,27 @@ function ChatArea() {
       flex-1 mb-4 overflow-hidden
       ${deviceType === 'mobile' ? 'px-2' : 'px-4'}
     `}>
-      <ScrollArea 
+      <div 
         className={`
           ${deviceType === 'mobile' 
             ? 'h-[calc(100vh-140px)]' 
             : 'h-[calc(100vh-200px)]'
           }
-        `} 
+          overflow-y-auto
+          scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-300 
+          hover:scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 
+          dark:hover:scrollbar-thumb-gray-500
+        `}
+        style={{
+          scrollbarGutter: 'stable',
+          scrollbarWidth: 'thin',
+        }}
         ref={scrollAreaRef}
       >
         {messages.length === 0 ? (
           // 欢迎页面
           <div className="h-full flex">
-            <div className="flex flex-col items-center justify-center h-full py-30 px-8 text-center w-full" id="welcome-area">
+            <div className="flex flex-col items-center justify-center h-full px-8 text-center w-full" id="welcome-area">
               <div className="max-w-2xl">
                 <h2 className="text-2xl font-bold mb-4 text-foreground">
                   欢迎使用 OWON AI 助手
@@ -99,7 +106,7 @@ function ChatArea() {
             ))}
           </div>
         )}
-      </ScrollArea>
+      </div>
     </div>
   );
 }

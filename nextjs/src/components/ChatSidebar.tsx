@@ -228,7 +228,7 @@ function SidebarContent({
   return (
     <>
       {/* 头部 */}
-      <div className="p-4 border-b flex flex-col gap-2">
+      <div className={`p-4 flex flex-col gap-2 ${sidebarCollapsed ? '' : 'border-b'}`}>
         {/* 桌面端侧边栏折叠/展开按钮 */}
         {!showCloseButton && (
           <Button

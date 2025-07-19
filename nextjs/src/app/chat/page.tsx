@@ -145,9 +145,6 @@ function ChatPageInner() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      {/* 顶部导航 */}
-      <Header />
-      
       <div className="flex flex-1 overflow-hidden">
         {/* 侧边栏 - 在移动端会是 overlay */}
         <ChatSidebar
@@ -157,14 +154,21 @@ function ChatPageInner() {
         />
 
         {/* 主聊天区域 */}
-        <div className={`
-          flex flex-col flex-1 overflow-hidden
-          ${deviceType === 'desktop' ? 'max-w-4xl mx-auto' : ''}
-          ${deviceType === 'mobile' ? 'w-full' : ''}
-        `}>
-          <ChatArea />
-          <div className={deviceType === 'mobile' ? 'px-2 pb-2' : 'px-4 pb-4'}>
-            <ChatInput onSendMessage={sendMessage} isLoading={isLoading} />
+        <div className="flex flex-col flex-1 w-full">
+          {/* 顶部导航 - 现在作为聊天区域的一部分 */}
+          <div className="w-full">
+            <Header />
+          </div>
+          
+          <div className={`
+            flex flex-col flex-1 overflow-hidden
+            ${deviceType === 'desktop' ? 'max-w-4xl mx-auto w-full' : ''}
+            ${deviceType === 'mobile' ? 'w-full' : ''}
+          `} id="chat-area">
+            <ChatArea />
+            <div className={deviceType === 'mobile' ? 'px-2 pb-2' : 'px-4 pb-4'}>
+              <ChatInput onSendMessage={sendMessage} isLoading={isLoading} />
+            </div>
           </div>
         </div>
       </div>

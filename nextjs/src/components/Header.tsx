@@ -49,7 +49,7 @@ export default function Header() {
             alt="OWON Logo"
             width={48}
             height={32}
-            className="h-8 w-auto"
+            className="h-10 w-auto"
           />
           {/* <h1 className="text-xl font-semibold text-primary">OWON AI 助手</h1> */}
         </div>

@@ -273,7 +273,7 @@ function SidebarContent({
       </div>
 
       {/* 历史对话列表 */}
-      <ScrollArea className="flex-1 p-2">
+      <ScrollArea className="flex-1 p-2 h-[calc(100vh-180px)]">
         {loading || status === 'loading' ? (
           <div className="text-center text-muted-foreground py-4">
             {sidebarCollapsed ? null : '加载中...'}

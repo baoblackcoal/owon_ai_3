@@ -59,6 +59,8 @@ export interface ChatContextType {
   handleNewChat: () => void;
   handleChatSelect: (chatId: string) => Promise<void>;
   handleFeedbackChange: (messageId: string, feedback: 'like' | 'dislike' | null) => Promise<void>;
+  // 历史记录刷新回调
+  setHistoryRefreshCallback: (callback: (() => void) | null) => void;
 }
 
 export interface ChatHistoryMessage {

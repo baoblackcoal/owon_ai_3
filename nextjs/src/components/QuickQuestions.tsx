@@ -1,28 +1,33 @@
 import { Button } from "@/components/ui/button";
 
-interface QuickQuestion {
+interface TestQuestion {
   text: string;
   icon: string;
   label: string;
 }
 
-const QUICK_QUESTIONS: QuickQuestion[] = [
-  { text: "hi", icon: "👋", label: "Hi" },
-  { text: "你有什么功能？", icon: "🔍", label: "功能介绍" },
-  { text: "ADS800的带宽是多少？", icon: "📊", label: "ADS800带宽" },
-  { text: "ADS800的采样率是多少？", icon: "", label: "ADS800的采样率是多少？" },
-  { text: "我刚才问了什么？", icon: "", label: "我刚才问了什么？" },
+const TEST_QUESTIONS: TestQuestion[] = [
+  { text: "测试消息1", icon: "🧪", label: "测试1" },
+  { text: "测试消息2", icon: "🔬", label: "测试2" },
+  { text: "测试消息3", icon: "⚗️", label: "测试3" },
+  { text: "测试消息4", icon: "🧮", label: "测试4" },
+  { text: "测试消息5", icon: "📊", label: "测试5" },
 ];
 
-interface QuickQuestionsProps {
+interface TestQuestionsProps {
   onQuestionSelect: (question: string) => Promise<void>;
   disabled?: boolean;
 }
 
-export function QuickQuestions({ onQuestionSelect, disabled = false }: QuickQuestionsProps) {
+export function TestQuestions({ onQuestionSelect, disabled = false }: TestQuestionsProps) {
+  // 在生产环境不显示测试问题
+  if (process.env.NODE_ENV === 'production') {
+    return null;
+  }
+
   return (
     <div className="mb-4 flex gap-2 overflow-x-auto pb-2">
-      {QUICK_QUESTIONS.map((question) => (
+      {TEST_QUESTIONS.map((question) => (
         <Button
           key={question.text}
           variant="outline"

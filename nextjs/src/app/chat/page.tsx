@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { instrumentType } from '@/lib/instrument-config';
 
 function ChatArea() {
-  const { messages, isLoading, handleFeedbackChange } = useChatContext();
+  const { messages, isLoading, handleFeedbackChange, sendMessage } = useChatContext();
   const { deviceType } = useUI();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
@@ -23,6 +23,17 @@ function ChatArea() {
       scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // 常用问题
+  const commonQuestions = [
+    "你有什么功能？",
+    "ADS800的带宽是多少？", 
+    "如何进行示波器校准？"
+  ];
+
+  const handleQuestionClick = async (question: string) => {
+    await sendMessage(question);
+  };
 
   return (
     <div className={`
@@ -38,17 +49,53 @@ function ChatArea() {
         `} 
         ref={scrollAreaRef}
       >
-        <div className="space-y-4">
-          {messages.map((message, index) => (
-            <ChatMessage
-              key={index}
-              message={message}
-              index={index}
-              isLoading={isLoading}
-              onFeedbackChange={handleFeedbackChange}
-            />
-          ))}
-        </div>
+        {messages.length === 0 ? (
+          // 欢迎页面
+          <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+            <div className="max-w-2xl">
+              <h2 className="text-2xl font-bold mb-4 text-foreground">
+                欢迎使用 OWON AI 助手
+              </h2>
+              <p className="text-muted-foreground mb-8 text-lg">
+                我是您的专业测试测量设备助手，可以帮助您解答关于示波器、信号发生器等设备的问题。
+              </p>
+              
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-foreground">
+                  试试这些常用问题：
+                </h3>
+                <div className="grid gap-3">
+                  {commonQuestions.map((question, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleQuestionClick(question)}
+                      disabled={isLoading}
+                      className="p-4 bg-muted hover:bg-muted/80 rounded-lg text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <div className="flex items-center">
+                        <span className="text-primary mr-3">❓</span>
+                        <span className="text-foreground">{question}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          // 聊天消息列表
+          <div className="space-y-4">
+            {messages.map((message, index) => (
+              <ChatMessage
+                key={index}
+                message={message}
+                index={index}
+                isLoading={isLoading}
+                onFeedbackChange={handleFeedbackChange}
+              />
+            ))}
+          </div>
+        )}
       </ScrollArea>
     </div>
   );

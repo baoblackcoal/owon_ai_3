@@ -8,10 +8,12 @@ import { z } from 'zod';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { instrumentType } from '@/lib/instrument-config';
+import { Settings, ChevronDown } from 'lucide-react';
 
 // 修改密码表单验证schema
 const changePasswordSchema = z.object({
@@ -35,6 +37,124 @@ interface UserChatInfo {
   dailyLimit: number;
   remainingCount: number;
   isGuest: boolean;
+}
+
+// 仪器选择器组件
+interface InstrumentSelectorProps {
+  value: string;
+  onChange: (value: string) => void;
+}
+
+function InstrumentSelector({ value, onChange }: InstrumentSelectorProps) {
+  const [showDialog, setShowDialog] = useState(false);
+  const [selectedInstrument, setSelectedInstrument] = useState('');
+  const [selectedSeries, setSelectedSeries] = useState('');
+
+  // 解析当前值
+  useEffect(() => {
+    if (value) {
+      // 查找对应的仪器和系列
+      for (const [instKey, instValue] of Object.entries(instrumentType)) {
+        if (Object.keys(instValue.pipelineIds).includes(value)) {
+          setSelectedInstrument(instKey);
+          setSelectedSeries(value);
+          break;
+        }
+      }
+    }
+  }, [value]);
+
+  const handleInstrumentChange = (instrumentKey: string) => {
+    setSelectedInstrument(instrumentKey);
+    const availableSeries = Object.keys(instrumentType[instrumentKey].pipelineIds);
+    if (availableSeries.length > 0) {
+      setSelectedSeries(availableSeries[0]);
+    }
+  };
+
+  const handleConfirm = () => {
+    if (selectedSeries) {
+      onChange(selectedSeries);
+    }
+    setShowDialog(false);
+  };
+
+  const getCurrentDisplayName = () => {
+    if (!value) return '选择默认机型';
+    
+    for (const [instKey, instValue] of Object.entries(instrumentType)) {
+      if (Object.keys(instValue.pipelineIds).includes(value)) {
+        return `${instValue.name} - ${value}`;
+      }
+    }
+    return value;
+  };
+
+  return (
+    <Dialog open={showDialog} onOpenChange={setShowDialog}>
+      <DialogTrigger asChild>
+        <Button
+          variant="outline"
+          className="w-full justify-between"
+        >
+          <div className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            <span className="truncate">{getCurrentDisplayName()}</span>
+          </div>
+          <ChevronDown className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>选择默认机型</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label>仪器类型</Label>
+            <Select value={selectedInstrument} onValueChange={handleInstrumentChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="选择仪器" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(instrumentType).map(([key, value]) => (
+                  <SelectItem key={key} value={key}>
+                    {value.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {selectedInstrument && (
+            <div className="space-y-2">
+              <Label>系列</Label>
+              <Select value={selectedSeries} onValueChange={setSelectedSeries}>
+                <SelectTrigger>
+                  <SelectValue placeholder="选择系列" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.keys(instrumentType[selectedInstrument].pipelineIds).map((series) => (
+                    <SelectItem key={series} value={series}>
+                      {series}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowDialog(false)}>
+              取消
+            </Button>
+            <Button onClick={handleConfirm} disabled={!selectedSeries}>
+              确定
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
@@ -119,15 +239,6 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
     }
   }, []);
 
-  const modelOptions = [
-    { value: 'ADS800A', label: 'ADS800A' },
-    { value: 'ADS900A', label: 'ADS900A' },
-    { value: 'ADS3000', label: 'ADS3000' },
-    { value: 'ADS3000A', label: 'ADS3000A' },
-    { value: 'ADS4000', label: 'ADS4000' },
-    { value: 'ADS4000A', label: 'ADS4000A' },
-  ];
-
   if (!session?.user) {
     return null;
   }
@@ -153,7 +264,7 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
                   您的账户基本信息
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 min-h-[200px]">
                 <div className="space-y-2">
                   <Label>邮箱</Label>
                   <Input
@@ -170,6 +281,8 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
                       今日已使用：{chatInfo.chatCount} / {chatInfo.dailyLimit} 次
                       <br />
                       剩余次数：{chatInfo.remainingCount} 次
+                      <br />
+                      重置时间：每日 00:00 (UTC+8)
                     </div>
                   </div>
                 )}
@@ -184,7 +297,7 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
                     更改您的账户密码
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="min-h-[200px]">
                   <form onSubmit={changePasswordForm.handleSubmit(handleChangePassword)} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="current-password">当前密码</Label>
@@ -256,21 +369,13 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
                   应用的通用配置选项
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 min-h-[200px]">
                 <div className="space-y-2">
                   <Label>新建对话默认机型</Label>
-                  <Select value={defaultModel} onValueChange={handleModelChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="选择默认机型" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {modelOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <InstrumentSelector
+                    value={defaultModel}
+                    onChange={handleModelChange}
+                  />
                 </div>
               </CardContent>
             </Card>

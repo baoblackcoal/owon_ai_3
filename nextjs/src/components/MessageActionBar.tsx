@@ -55,18 +55,13 @@ export function MessageActionBar({
         size="sm"
         onClick={handleCopy}
         disabled={disabled}
-        className="h-8 px-2"
+        className="h-8 w-8 p-0"
+        title={copySuccess ? '已复制' : '复制'}
       >
         {copySuccess ? (
-          <>
-            <Check className="h-4 w-4 mr-1" />
-            已复制
-          </>
+          <Check className="h-4 w-4" />
         ) : (
-          <>
-            <Copy className="h-4 w-4 mr-1" />
-            复制
-          </>
+          <Copy className="h-4 w-4" />
         )}
       </Button>
 
@@ -75,12 +70,12 @@ export function MessageActionBar({
         size="sm"
         onClick={() => handleFeedback('like')}
         disabled={disabled || isUpdating}
-        className={`h-8 px-2 ${
+        className={`h-8 w-8 p-0 ${
           feedback === 'like' ? 'text-green-600 bg-green-50' : ''
         }`}
+        title="点赞"
       >
-        <ThumbsUp className="h-4 w-4 mr-1" />
-        点赞
+        <ThumbsUp className="h-4 w-4" />
       </Button>
 
       <Button
@@ -88,12 +83,12 @@ export function MessageActionBar({
         size="sm"
         onClick={() => handleFeedback('dislike')}
         disabled={disabled || isUpdating}
-        className={`h-8 px-2 ${
+        className={`h-8 w-8 p-0 ${
           feedback === 'dislike' ? 'text-red-600 bg-red-50' : ''
         }`}
+        title="点踩"
       >
-        <ThumbsDown className="h-4 w-4 mr-1" />
-        点踩
+        <ThumbsDown className="h-4 w-4" />
       </Button>
     </div>
   );

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useUI } from '@/contexts/UIContext';
+import { useChatContext } from '@/contexts/ChatContext';
 import { ChevronLeft, ChevronRight, X, MessageSquare, Plus } from 'lucide-react';
 
 interface ChatSession {
@@ -26,6 +27,7 @@ export default function ChatSidebar({ currentChatId, onChatSelect, onNewChat }: 
   const { data: session, status } = useSession();
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [loading, setLoading] = useState(true);
+  const { setHistoryRefreshCallback } = useChatContext();
   
   const { 
     sidebarCollapsed, 
@@ -53,6 +55,12 @@ export default function ChatSidebar({ currentChatId, onChatSelect, onNewChat }: 
       setLoading(false);
     }
   };
+
+  // 注册历史刷新回调
+  useEffect(() => {
+    setHistoryRefreshCallback(loadChatHistory);
+    return () => setHistoryRefreshCallback(null);
+  }, [setHistoryRefreshCallback]);
 
   useEffect(() => {
     if (status !== 'loading') {
@@ -151,6 +159,7 @@ export default function ChatSidebar({ currentChatId, onChatSelect, onNewChat }: 
             formatTime={formatTime}
             showCloseButton={true}
             onClose={() => setMobileSidebarOpen(false)}
+            toggleSidebar={toggleSidebar}
           />
         </div>
       </>
@@ -164,21 +173,7 @@ export default function ChatSidebar({ currentChatId, onChatSelect, onNewChat }: 
       transition-all duration-300 ease-in-out
       ${sidebarCollapsed ? 'w-16' : 'w-64'}
     `}>
-      {/* 折叠/展开按钮 */}
-      <div className="absolute -right-3 top-6 z-10">
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-6 w-6 rounded-full p-0 shadow-md bg-background hover:bg-accent"
-          onClick={toggleSidebar}
-        >
-          {sidebarCollapsed ? (
-            <ChevronRight className="h-3 w-3" />
-          ) : (
-            <ChevronLeft className="h-3 w-3" />
-          )}
-        </Button>
-      </div>
+      
 
       <SidebarContent 
         loading={loading}
@@ -191,6 +186,7 @@ export default function ChatSidebar({ currentChatId, onChatSelect, onNewChat }: 
         onChatSelect={onChatSelect}
         onDeleteChat={handleDeleteChat}
         formatTime={formatTime}
+        toggleSidebar={toggleSidebar}
       />
     </div>
   );
@@ -211,6 +207,7 @@ interface SidebarContentProps {
   formatTime: (timestamp: string) => string;
   showCloseButton?: boolean;
   onClose?: () => void;
+  toggleSidebar: () => void;
 }
 
 function SidebarContent({
@@ -225,12 +222,26 @@ function SidebarContent({
   onDeleteChat,
   formatTime,
   showCloseButton = false,
-  onClose
+  onClose,
+  toggleSidebar
 }: SidebarContentProps) {
   return (
     <>
       {/* 头部 */}
       <div className="p-4 border-b flex items-center justify-between">
+        {/* 桌面端侧边栏折叠/展开按钮 */}
+        {!showCloseButton && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={toggleSidebar}
+            aria-label={sidebarCollapsed ? "展开侧边栏" : "收起侧边栏"}
+          >
+            {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </Button>
+        )}
+
         {showCloseButton && (
           <Button
             variant="ghost"
@@ -267,24 +278,19 @@ function SidebarContent({
       <ScrollArea className="flex-1 p-2">
         {loading || status === 'loading' ? (
           <div className="text-center text-muted-foreground py-4">
-            {sidebarCollapsed ? <MessageSquare className="h-4 w-4 mx-auto" /> : '加载中...'}
+            {sidebarCollapsed ? null : '加载中...'}
           </div>
         ) : !session ? (
           <div className="text-center text-muted-foreground py-4">
-            {sidebarCollapsed ? (
-              <MessageSquare className="h-4 w-4 mx-auto opacity-50" />
-            ) : (
-              <p>请登录以查看历史对话</p>
-            )}
+            {sidebarCollapsed ? null : <p>请登录以查看历史对话</p>}
           </div>
         ) : chatSessions.length === 0 ? (
           <div className="text-center text-muted-foreground py-4">
-            {sidebarCollapsed ? (
-              <MessageSquare className="h-4 w-4 mx-auto opacity-50" />
-            ) : (
-              '暂无历史对话'
-            )}
+            {sidebarCollapsed ? null : '暂无历史对话'}
           </div>
+        ) : sidebarCollapsed ? (
+          // 侧边栏收起时不显示历史对话列表
+          null
         ) : (
           <div className="space-y-2">
             {chatSessions.map((session) => (
@@ -293,36 +299,29 @@ function SidebarContent({
                 className={`
                   cursor-pointer hover:bg-accent transition-all duration-200 group
                   ${currentChatId === session.id ? 'bg-accent border-primary/50' : ''}
-                  ${sidebarCollapsed ? 'p-2' : 'p-3'}
+                  p-3
                 `}
                 onClick={() => onChatSelect(session.id)}
-                title={sidebarCollapsed ? session.title : undefined}
               >
-                {sidebarCollapsed ? (
-                  <div className="flex justify-center">
-                    <MessageSquare className="h-4 w-4" />
-                  </div>
-                ) : (
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm truncate">
-                        {session.title}
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {formatTime(session.updatedAt)} • {session.messageCount} 条消息
-                      </div>
+                <div className="flex justify-between items-start">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm truncate">
+                      {session.title}
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 h-6 w-6 p-0 hover:bg-destructive hover:text-destructive-foreground"
-                      onClick={(e) => onDeleteChat(session.id, e)}
-                      title="删除对话"
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {formatTime(session.updatedAt)} • {session.messageCount} 条消息
+                    </div>
                   </div>
-                )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 h-6 w-6 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                    onClick={(e) => onDeleteChat(session.id, e)}
+                    title="删除对话"
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
               </Card>
             ))}
           </div>

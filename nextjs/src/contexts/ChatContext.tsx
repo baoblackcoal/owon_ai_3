@@ -19,11 +19,18 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   // Add state for instrument and series
   const [instrument, setInstrument] = useState<string>('OSC');
   const [series, setSeries] = useState<string>('ADS800A');
+  // Add state for history refresh callback
+  const [onHistoryRefresh, setOnHistoryRefresh] = useState<(() => void) | null>(null);
 
   // Add setter for instrument and series
   const setInstrumentSeries = useCallback((newInstrument: string, newSeries: string) => {
     setInstrument(newInstrument);
     setSeries(newSeries);
+  }, []);
+
+  // Add setter for history refresh callback
+  const setHistoryRefreshCallback = useCallback((callback: (() => void) | null) => {
+    setOnHistoryRefresh(() => callback);
   }, []);
 
   // Update sendMessage to use context values
@@ -37,6 +44,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     setMessages(prev => [...prev, aiMessage]);
 
     setIsLoading(true);
+    
+    // Track if this is a new chat (no currentChatId)
+    const isNewChat = !currentChatId;
 
     try {
       const response = await fetch('/api/chat', {
@@ -77,6 +87,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         if (done) {
           setDashscopeSessionId(session_id);
           setCurrentChatId(chat_id);
+          
+          // If this was a new chat and we got a chat_id, refresh history
+          if (isNewChat && chat_id && onHistoryRefresh) {
+            onHistoryRefresh();
+          }
+          
           break;
         }
 
@@ -139,7 +155,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [currentChatId, dashscopeSessionId, isLoading, instrument, series]); // add instrument and series to dependencies
+  }, [currentChatId, dashscopeSessionId, isLoading, instrument, series, onHistoryRefresh]); // add onHistoryRefresh to dependencies
 
   const handleNewChat = useCallback(() => {
     setMessages([]);
@@ -207,7 +223,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     // Add instrument and series and their setters
     instrument,
     series,
-    setInstrumentSeries
+    setInstrumentSeries,
+    // Add history refresh callback
+    setHistoryRefreshCallback
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

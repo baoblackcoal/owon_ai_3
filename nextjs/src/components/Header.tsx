@@ -8,13 +8,14 @@ import AuthDialog from './AuthDialog';
 import UserMenu from './UserMenu';
 import SettingsDialog from './SettingsDialog';
 import { useUI } from '@/contexts/UIContext';
+import Image from 'next/image';
 
 export default function Header() {
   const { data: session, status } = useSession();
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   
-  const { deviceType, toggleMobileSidebar, toggleSidebar } = useUI();
+  const { deviceType, toggleMobileSidebar } = useUI();
 
   const handleAuthSuccess = () => {
     // 认证成功后刷新页面以获取最新的用户数据
@@ -41,39 +42,24 @@ export default function Header() {
           </Button>
         )}
         
-        {/* 桌面端侧边栏折叠按钮（可选，也可以只用侧边栏上的按钮） */}
-        {deviceType === 'desktop' && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={toggleSidebar}
-            className="h-9 w-9 p-0"
-            aria-label="切换侧边栏"
-          >
-            <Menu className="h-4 w-4" />
-          </Button>
-        )}
-        
-        <h1 className="text-xl font-semibold text-primary">OWON AI</h1>
+        {/* Logo 和标题 */}
+        <div className="flex items-center space-x-3">
+          <Image
+            src="/logo.png"
+            alt="OWON Logo"
+            width={32}
+            height={32}
+            className="w-8 h-8"
+          />
+          <h1 className="text-xl font-semibold text-primary">OWON AI</h1>
+        </div>
       </div>
 
       <div className="flex items-center space-x-2">
         {status === 'loading' ? (
           <div className="text-sm text-muted-foreground">加载中...</div>
         ) : session?.user ? (
-          <div className="flex items-center space-x-2">
-            {/* 移动端简化的设置按钮 */}
-            {deviceType === 'mobile' && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleOpenSettings}
-                className="h-9 w-9 p-0"
-                aria-label="设置"
-              >
-                <Settings className="h-4 w-4" />
-              </Button>
-            )}
+          <div className="flex items-center space-x-2">            
             <UserMenu onOpenSettings={handleOpenSettings} />
           </div>
         ) : (

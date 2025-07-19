@@ -1,8 +1,6 @@
 import { marked } from 'marked';
 import { Message } from '@/types/chat';
 import { MessageActionBar } from './MessageActionBar';
-import { User, Bot } from 'lucide-react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useUI } from '@/contexts/UIContext';
 
 interface ChatMessageProps {
@@ -35,26 +33,10 @@ export function ChatMessage({ message, index, isLoading, onFeedbackChange }: Cha
       ${isUser ? 'flex-row-reverse' : 'flex-row'}
       ${deviceType === 'mobile' ? 'mx-2' : 'mx-4'}
     `}>
-      {/* 头像 */}
-      <Avatar className={`
-        flex-shrink-0 
-        ${deviceType === 'mobile' ? 'w-8 h-8' : 'w-10 h-10'}
-        ${isUser ? 'order-last' : 'order-first'}
-      `}>
-        <AvatarFallback className={`
-          ${isUser 
-            ? 'bg-primary text-primary-foreground' 
-            : 'bg-secondary text-secondary-foreground'
-          }
-        `}>
-          {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
-        </AvatarFallback>
-      </Avatar>
-
       {/* 消息内容 */}
       <div className={`
         flex-1 max-w-none
-        ${deviceType === 'mobile' ? 'max-w-[calc(100%-3rem)]' : 'max-w-[80%]'}
+        ${deviceType === 'mobile' ? 'max-w-[calc(100%-1rem)]' : 'max-w-[85%]'}
       `}>
         {/* 消息气泡 */}
         <div

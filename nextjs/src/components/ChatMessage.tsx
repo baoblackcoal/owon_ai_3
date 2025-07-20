@@ -44,7 +44,7 @@ export function ChatMessage({ message, index, isLoading, onFeedbackChange }: Cha
             ${isUser 
               ? 'bg-primary text-primary-foreground rounded-lg inline-block ml-auto p-4' 
               : 'text-foreground'}
-            ${!message.content && isAssistant && isLoading ? 'animate-pulse' : ''}
+            ${!message.content && isAssistant && isLoading ? 'animate-pulse' : ''}            
           `}
           id={isUser ? `user-message-${index}` : `assistant-message-${index}`}
         >
@@ -52,8 +52,8 @@ export function ChatMessage({ message, index, isLoading, onFeedbackChange }: Cha
             <div 
               className={`
                 prose prose-sm max-w-none
-                ${isUser ? 'prose-invert' : 'dark:prose-invert'}
-                prose-p:my-2 prose-p:leading-relaxed
+                ${isUser ? 'prose-invert' : 'dark:prose-invert  [&_p]:mb-2'}
+                prose-p:leading-relaxed
                 prose-code:bg-muted/50 prose-code:px-1 prose-code:py-0.5 prose-code:rounded
                 prose-pre:bg-muted/50 prose-pre:border
               `}

@@ -94,7 +94,17 @@ function ChatArea() {
           </div>
         ) : (
           // 聊天消息列表
-          <div className="space-y-4 pt-4" id="chat-message-area">
+          <div className="space-y-4 pt-4 
+                [&_h1]:mb-2
+                [&_h2]:mb-2 
+                [&_h3]:mb-2
+                [&_h4]:mb-2
+                [&_h5]:mb-2
+                [&_h6]:mb-2
+                [&_ul]:ml-4 [&_ol]:ml-4 
+                [&_ul]:mb-4 [&_ol]:mb-4 
+                [&_strong]:font-bold
+                " id="chat-message-area">
             {messages.map((message, index) => (
               <ChatMessage
                 key={index}

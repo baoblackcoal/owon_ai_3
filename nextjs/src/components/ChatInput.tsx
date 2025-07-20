@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { TestQuestions } from './QuickQuestions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -59,17 +60,19 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
 
   // UI 组件
   const renderInputForm = () => (
-    <form onSubmit={handleSubmit}>
-      <Input
+    <form onSubmit={handleSubmit} className="flex-1">
+      <Textarea
+        id="chat-input"
         value={input}
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
         placeholder="输入消息..."
         disabled={isLoading}
         className={`
-          text-responsive-sm
-          ${deviceType === 'mobile' ? 'h-12' : 'h-11'}
-          focus:ring-2 focus:ring-primary/20
+          text-responsive-sm border-none w-full shadow-none resize-none
+          min-h-[20px] max-h-[40px] overflow-y-auto
+          ${deviceType === 'mobile' ? 'h-12' : 'h-auto'}
+          focus:ring-0 focus-visible:ring-0 focus:outline-none
         `}
       />
     </form>
@@ -79,20 +82,20 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
     <Dialog open={showInstrumentDialog} onOpenChange={setShowInstrumentDialog}>
       <DialogTrigger asChild>
         <Button
-          variant="outline"
+          id="instrument-select"
+          variant="ghost"
           disabled={isLoading}
           className={`
-            flex items-center gap-2 flex-1 justify-between
+            flex items-center gap-2 justify-between px-3
             ${deviceType === 'mobile' ? 'h-11' : 'h-10'}
           `}
         >
           <div className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
             <span className="truncate">
-              {currentInstrumentName} - {currentSeriesName}
+              {currentSeriesName}
             </span>
           </div>
-          <ChevronDown className="h-4 w-4" />
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -152,16 +155,17 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
 
   const renderSendButton = () => (
     <Button
+      id="send-button"
       onClick={(e) => {
         e.preventDefault();
         handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>);
       }}
       disabled={isLoading || !input.trim()}
       className={`
-        button-enhanced touch-target rounded-full
+        button-enhanced rounded-full
         ${deviceType === 'mobile' 
-          ? 'h-11 w-11 p-0' 
-          : 'h-10 px-4 gap-2'
+          ? 'h-8 w-8 p-0' 
+          : 'h-8 w-8 px-4 gap-2'
         }
       `}
       title={isLoading ? "发送中" : "发送"}
@@ -184,11 +188,15 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
 
   return (
     <div className="space-y-3">
-      <div className="space-y-3" id="chat-input">
-        {renderInputForm()}
-        <div className="flex items-center gap-3">
-          {renderInstrumentDialog()}
-          {renderSendButton()}
+      <div className="space-y-1" id="chat-input-container">
+        <div className="flex flex-col gap-2 border rounded-xl p-2">
+          <div className="w-full">
+            {renderInputForm()}
+          </div>
+          <div className="flex items-center justify-between w-full  text-base line-height-1">
+            {renderInstrumentDialog()}
+            {renderSendButton()}
+          </div>
         </div>
       </div>
       

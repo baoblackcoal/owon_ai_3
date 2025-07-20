@@ -228,7 +228,7 @@ function SidebarContent({
   return (
     <>
       {/* 头部 */}
-      <div className={`p-4 flex flex-col gap-2 ${sidebarCollapsed ? '' : 'border-b'}`}>
+      <div className={`p-4  bg-muted flex flex-col gap-2 ${sidebarCollapsed ? '' : 'border-b'}`}>
         {/* 桌面端侧边栏折叠/展开按钮 */}
         {!showCloseButton && (
           <Button
@@ -273,7 +273,7 @@ function SidebarContent({
       </div>
 
       {/* 历史对话列表 */}
-      <ScrollArea className="flex-1 p-2 h-[calc(100vh-180px)]">
+      <ScrollArea className="flex-1 p-2 h-[calc(100vh-180px)]  bg-muted">
         {loading || status === 'loading' ? (
           <div className="text-center text-muted-foreground py-4">
             {sidebarCollapsed ? null : '加载中...'}
@@ -295,8 +295,8 @@ function SidebarContent({
               <Card
                 key={session.id}
                 className={`
-                  cursor-pointer hover:bg-accent transition-all duration-200 group
-                  ${currentChatId === session.id ? 'bg-accent border-primary/50' : ''}
+                  bg-muted cursor-pointer hover:bg-background transition-all duration-200 group
+                  ${currentChatId === session.id ? 'bg-background border-primary/50' : ''}
                   p-3
                 `}
                 onClick={() => onChatSelect(session.id)}

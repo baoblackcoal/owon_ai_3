@@ -187,9 +187,9 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
   );
 
   return (
-    <div className="space-y-3">
-      <div className="space-y-1" id="chat-input-container">
-        <div className="flex flex-col gap-2 border rounded-xl p-2">
+    <div className="">
+      <div className="" id="chat-input-container">
+        <div className="flex flex-col border rounded-xl p-2">
           <div className="w-full">
             {renderInputForm()}
           </div>
@@ -200,7 +200,7 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
         </div>
       </div>
       
-      <p className="text-xs text-muted-foreground text-center">
+      <p className="text-xs text-muted-foreground text-center pt-2">
         AI生成内容未必准确，请仔细核查
       </p>
     </div>

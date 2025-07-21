@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { Button } from "@/components/ui/button";
-import { Menu, Settings } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import AuthDialog from './AuthDialog';
 import UserMenu from './UserMenu';
 import SettingsDialog from './SettingsDialog';

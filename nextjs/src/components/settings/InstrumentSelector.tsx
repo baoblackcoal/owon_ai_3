@@ -22,9 +22,9 @@ export function InstrumentSelector({ value, onChange }: InstrumentSelectorProps)
   useEffect(() => {
     if (value) {
       // 查找对应的仪器和系列
-      for (const [instKey, instValue] of Object.entries(instrumentType)) {
+      for (const [key, instValue] of Object.entries(instrumentType)) {
         if (Object.keys(instValue.pipelineIds).includes(value)) {
-          setSelectedInstrument(instKey);
+          setSelectedInstrument(key);
           setSelectedSeries(value);
           break;
         }
@@ -50,7 +50,7 @@ export function InstrumentSelector({ value, onChange }: InstrumentSelectorProps)
   const getCurrentDisplayName = () => {
     if (!value) return '选择默认机型';
     
-    for (const [instKey, instValue] of Object.entries(instrumentType)) {
+    for (const [, instValue] of Object.entries(instrumentType)) {
       if (Object.keys(instValue.pipelineIds).includes(value)) {
         return `${instValue.name} - ${value}`;
       }

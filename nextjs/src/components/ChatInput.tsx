@@ -1,14 +1,12 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { TestQuestions } from './QuickQuestions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { instrumentType } from '@/lib/instrument-config';
 import { useChatContext } from '@/contexts/ChatContext';
 import { useUI } from '@/contexts/UIContext';
-import { ArrowUp, Square, Settings, ChevronDown } from 'lucide-react';
+import { ArrowUp, Square, Settings } from 'lucide-react';
 
 interface ChatInputProps {
   onSendMessage: (message: string) => Promise<void>;
@@ -21,11 +19,11 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
   const { deviceType } = useUI();
 
   // 输入相关逻辑
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>);
@@ -55,7 +53,6 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
     setInstrumentSeries(instrument, value);
   };
 
-  const currentInstrumentName = instrumentType[instrument]?.name || instrument;
   const currentSeriesName = series;
 
   // UI 组件

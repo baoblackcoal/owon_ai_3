@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useUI } from '@/contexts/UIContext';
 import { useChatContext } from '@/contexts/ChatContext';
-import { ChevronLeft, ChevronRight, X, MessageSquare, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Plus } from 'lucide-react';
 
 interface ChatSession {
   id: string;
@@ -222,7 +222,6 @@ function SidebarContent({
   onDeleteChat,
   formatTime,
   showCloseButton = false,
-  onClose,
   toggleSidebar
 }: SidebarContentProps) {
   return (

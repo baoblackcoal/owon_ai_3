@@ -1,132 +1,15 @@
 'use client';
 
-import { useRef, useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import ChatSidebar from '@/components/ChatSidebar';
 import Header from '@/components/Header';
 import { ChatProvider, useChatContext } from '@/contexts/ChatContext';
 import { UIProvider, useUI } from '@/contexts/UIContext';
-import { ChatMessage } from '@/components/ChatMessage';
 import { ChatInput } from '@/components/ChatInput';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { instrumentType } from '@/lib/instrument-config';
-
-function ChatArea() {
-  const { messages, isLoading, handleFeedbackChange, sendMessage } = useChatContext();
-  const { deviceType } = useUI();
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
-
-  // 自动滚动到底部
-  useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
-    }
-  }, [messages]);
-
-  interface CommonQuestion {
-    text: string;
-    icon: string;
-  }
-  
-  const COMMON_QUESTIONS: CommonQuestion[] = [
-    { text: "幅度是怎么计算？", icon: "📏"},
-    { text: "如何使用光标测量？", icon: "📊"},
-    { text: "如何进行示波器校准？", icon: "🔧"},
-  ];
-
-  const handleQuestionClick = async (question: string) => {
-    await sendMessage(question);
-  };
-
-  return (
-    <div className={`
-      flex-1 overflow-hidden
-    `}>
-      <div 
-        className={`
-          ${deviceType === 'mobile' 
-            ? 'h-[calc(100vh-200px)]' 
-            : 'h-[calc(100vh-200px)]'
-          }
-          overflow-y-auto
-          scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-300 
-          hover:scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 
-          dark:hover:scrollbar-thumb-gray-500
-        `}
-        style={{
-          scrollbarGutter: 'stable',
-          scrollbarWidth: 'thin',
-        }}
-        ref={scrollAreaRef}
-      >
-        {messages.length === 0 ? (
-          // 欢迎页面
-          <div className="h-full flex">
-            <div className="flex flex-col items-center justify-center h-full px-8 text-center w-full" id="welcome-area">
-              <div className="max-w-2xl">
-                <h2 className="text-2xl font-bold mb-4 text-foreground">
-                  欢迎使用 OWON AI 助手
-                </h2>
-                <p className="text-muted-foreground mb-8 text-lg">
-                  我是您的专业测试测量设备助手，可以帮助您解答关于OWON的示波器、信号发生器等设备的问题。
-                </p>
-                
-                <div className="space-y-4">                
-                  <div className="grid gap-3">
-                    {COMMON_QUESTIONS.map((question, index) => (
-                      <button
-                        key={index}
-                        onClick={() => handleQuestionClick(question.text)}
-                        disabled={isLoading}
-                        className="p-4 bg-muted hover:bg-muted/80 rounded-lg text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <div className="flex items-center">
-                          <span className="text-primary mr-3">{question.icon}</span>
-                          <span className="text-foreground">{question.text}</span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          // 聊天消息列表
-          <div className="space-y-4 pt-4 mx-4
-                [&_h1]:mb-2
-                [&_h2]:mb-2 
-                [&_h3]:mb-2
-                [&_h4]:mb-2
-                [&_h5]:mb-2
-                [&_h6]:mb-2
-                [&_ul]:ml-4 [&_ol]:ml-4 
-                [&_ul]:mb-4 [&_ol]:mb-4 
-                [&_strong]:font-bold
-                " id="chat-message-area">
-            {messages.map((message, index) => (
-              <ChatMessage
-                key={index}
-                message={message}
-                index={index}
-                isLoading={isLoading}
-                onFeedbackChange={handleFeedbackChange}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function ChatPageContent() {
-  return (
-    <Suspense fallback={null}>
-      <ChatPageInner />
-    </Suspense>
-  );
-}
+import { ChatArea } from '@/components/chat/ChatArea';
+import { InstrumentDialog } from '@/components/chat/InstrumentDialog';
 
 function ChatPageInner() {
   const { 
@@ -144,13 +27,12 @@ function ChatPageInner() {
   const searchParams = useSearchParams();
   const [showInstrumentModal, setShowInstrumentModal] = useState(false);
 
-  // Handle URL parameters on initial load
+  // 处理URL参数
   useEffect(() => {
     const urlInstrument = searchParams.get('instrument');
     const urlSeries = searchParams.get('series');
     
     if (urlInstrument && urlSeries) {
-      // Validate against instrument config
       const isValidInstrument = Object.keys(instrumentType).includes(urlInstrument);
       const isValidSeries = isValidInstrument && 
                            Object.keys(instrumentType[urlInstrument].pipelineIds).includes(urlSeries);
@@ -165,7 +47,7 @@ function ChatPageInner() {
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       <div className="flex flex-1 overflow-hidden">
-        {/* 侧边栏 - 在移动端会是 overlay */}
+        {/* 侧边栏 */}
         <ChatSidebar
           currentChatId={currentChatId}
           onChatSelect={handleChatSelect}
@@ -174,7 +56,6 @@ function ChatPageInner() {
 
         {/* 主聊天区域 */}
         <div className="flex flex-col flex-1 w-full">
-          {/* 顶部导航 - 现在作为聊天区域的一部分 */}
           <div className="w-full">
             <Header />
           </div>
@@ -190,19 +71,21 @@ function ChatPageInner() {
         </div>
       </div>
 
-      {/* Instrument Info Dialog */}
-      <Dialog open={showInstrumentModal} onOpenChange={() => setShowInstrumentModal(false)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>仪器信息</DialogTitle>
-          </DialogHeader>
-          <DialogDescription>
-            您的仪器是{instrumentType[instrument]?.name}，系列是{series}，
-            AI对话将会使用相关知识库。
-          </DialogDescription>
-        </DialogContent>
-      </Dialog>
+      <InstrumentDialog 
+        open={showInstrumentModal}
+        onOpenChange={setShowInstrumentModal}
+        instrument={instrument}
+        series={series}
+      />
     </div>
+  );
+}
+
+function ChatPageContent() {
+  return (
+    <Suspense fallback={null}>
+      <ChatPageInner />
+    </Suspense>
   );
 }
 

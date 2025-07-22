@@ -142,7 +142,7 @@ export default function ChatSidebar({ currentChatId, onChatSelect, onNewChat }: 
         
         {/* 移动端侧边栏 */}
         <div className={`
-          fixed top-0 left-0 h-full w-80 bg-background border-r z-50
+          fixed top-0 left-0 h-full w-80 bg-muted  border-r z-50
           transform transition-transform duration-300 ease-in-out
           ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}>
@@ -169,7 +169,7 @@ export default function ChatSidebar({ currentChatId, onChatSelect, onNewChat }: 
   // 桌面端和平板端：固定侧边栏
   return (
     <div className={`
-      relative h-full bg-background border-r flex flex-col
+      relative h-full bg-muted border-r flex flex-col
       transition-all duration-300 ease-in-out
       ${sidebarCollapsed ? 'w-16' : 'w-64'}
     `}>

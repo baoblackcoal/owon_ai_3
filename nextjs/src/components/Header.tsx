@@ -13,6 +13,7 @@ import Image from 'next/image';
 export default function Header() {
   const { data: session, status } = useSession();
   const [showAuthDialog, setShowAuthDialog] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   
   const { deviceType, toggleMobileSidebar } = useUI();
@@ -24,6 +25,11 @@ export default function Header() {
 
   const handleOpenSettings = () => {
     setShowSettingsDialog(true);
+  };
+
+  const openAuthDialog = (mode: 'login' | 'register') => {
+    setAuthMode(mode);
+    setShowAuthDialog(true);
   };
 
   return (
@@ -66,13 +72,13 @@ export default function Header() {
           <div className="flex items-center space-x-2">
             <Button
               variant="outline"
-              onClick={() => setShowAuthDialog(true)}
+              onClick={() => openAuthDialog('login')}
               className={deviceType === 'mobile' ? 'text-sm px-3' : ''}
             >
               登录
             </Button>
             <Button
-              onClick={() => setShowAuthDialog(true)}
+              onClick={() => openAuthDialog('register')}
               className={deviceType === 'mobile' ? 'text-sm px-3' : ''}
             >
               注册
@@ -85,6 +91,7 @@ export default function Header() {
         isOpen={showAuthDialog}
         onClose={() => setShowAuthDialog(false)}
         onSuccess={handleAuthSuccess}
+        initialMode={authMode}
       />
 
       <SettingsDialog
@@ -93,4 +100,5 @@ export default function Header() {
       />
     </header>
   );
-} 
+}
+ 

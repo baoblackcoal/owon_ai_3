@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -34,12 +34,20 @@ interface AuthDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  initialMode?: 'login' | 'register';
 }
 
-export default function AuthDialog({ isOpen, onClose, onSuccess }: AuthDialogProps) {
-  const [isLogin, setIsLogin] = useState(true);
+export default function AuthDialog({ isOpen, onClose, onSuccess, initialMode = 'login' }: AuthDialogProps) {
+  const [isLogin, setIsLogin] = useState(initialMode === 'login');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsLogin(initialMode === 'login');
+      resetForms();
+    }
+  }, [isOpen, initialMode]);
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),

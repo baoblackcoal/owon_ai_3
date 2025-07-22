@@ -233,7 +233,7 @@ function SidebarContent({
           <Button
             id="toggle-sidebar"
             variant="ghost"
-            className={!sidebarCollapsed ? "w-full" : "h-10 w-10 p-0"}
+            className={!sidebarCollapsed ? "w-full hover:bg-background" : "h-10 w-10 p-0 hover:bg-background"}
             onClick={toggleSidebar}
             aria-label={sidebarCollapsed ? "展开侧边栏" : "收起侧边栏"}
           >
@@ -252,7 +252,7 @@ function SidebarContent({
           <Button 
             id="new-chat"
             onClick={onNewChat}
-            className="w-full"
+            className="w-full hover:bg-background"
             variant="ghost"
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -262,7 +262,7 @@ function SidebarContent({
           <Button 
             id="new-chat"
             onClick={onNewChat}
-            className="h-10 w-10 p-0"
+            className="h-10 w-10 p-0 hover:bg-background"
             variant="ghost"
             title="发起新对话"
           >

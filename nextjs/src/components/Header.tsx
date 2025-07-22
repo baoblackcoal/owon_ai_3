@@ -65,7 +65,7 @@ export default function Header() {
         ) : (
           <div className="flex items-center space-x-2">
             <Button
-              variant="ghost"
+              variant="outline"
               onClick={() => setShowAuthDialog(true)}
               className={deviceType === 'mobile' ? 'text-sm px-3' : ''}
             >

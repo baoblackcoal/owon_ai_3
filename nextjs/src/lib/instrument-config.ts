@@ -16,17 +16,17 @@ const pipelineIdsOscSeries: PipelineIdsSeries = {
     "ADS4000A": ["fppfqitpyd", "d2wqds0m3e"],
 };
 
-const pipelineIdsAfgSeries: PipelineIdsSeries = {
-    "AFG1000": ["fppfqitpyd", "d2wqds0m3e"],
-};
+// const pipelineIdsAfgSeries: PipelineIdsSeries = {
+//     "AFG1000": ["fppfqitpyd", "d2wqds0m3e"],
+// };
 
-const pipelineIdsDmmSeries: PipelineIdsSeries = {
-    "DMM2000": ["fppfqitpyd", "d2wqds0m3e"],
-};
+// const pipelineIdsDmmSeries: PipelineIdsSeries = {
+//     "DMM2000": ["fppfqitpyd", "d2wqds0m3e"],
+// };
 
-const pipelineIdsPwrSeries: PipelineIdsSeries = {
-    "PWR1000": ["fppfqitpyd", "d2wqds0m3e"],
-};
+// const pipelineIdsPwrSeries: PipelineIdsSeries = {
+//     "PWR1000": ["fppfqitpyd", "d2wqds0m3e"],
+// };
 
 export const instrumentType: Record<string, InstrumentType> = {
     "OSC": { name: "示波器", pipelineIds: pipelineIdsOscSeries },

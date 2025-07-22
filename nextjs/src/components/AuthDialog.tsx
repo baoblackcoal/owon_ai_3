@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -42,13 +42,6 @@ export default function AuthDialog({ isOpen, onClose, onSuccess, initialMode = '
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (isOpen) {
-      setIsLogin(initialMode === 'login');
-      resetForms();
-    }
-  }, [isOpen, initialMode]);
-
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -65,6 +58,19 @@ export default function AuthDialog({ isOpen, onClose, onSuccess, initialMode = '
       confirmPassword: '',
     },
   });
+
+  const resetForms = useCallback(() => {
+    loginForm.reset();
+    registerForm.reset();
+    setError(null);
+  }, [loginForm, registerForm]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsLogin(initialMode === 'login');
+      resetForms();
+    }
+  }, [isOpen, initialMode, resetForms]);
 
   const handleLogin = async (data: LoginFormData) => {
     setIsLoading(true);
@@ -134,16 +140,12 @@ export default function AuthDialog({ isOpen, onClose, onSuccess, initialMode = '
     }
   };
 
-  const resetForms = () => {
-    loginForm.reset();
-    registerForm.reset();
-    setError(null);
-  };
+  
 
-  const switchMode = () => {
+  const switchMode = useCallback(() => {
     setIsLogin(!isLogin);
     resetForms();
-  };
+  }, [isLogin, resetForms]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

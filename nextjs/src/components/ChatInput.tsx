@@ -184,7 +184,7 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
   );
 
   return (
-    <div className="mb-2">
+    <div className="mb-2 mx-4">
       <div className="" id="chat-input-container">
         <div className="flex flex-col border rounded-xl p-2">
           <div className="w-full">

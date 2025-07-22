@@ -31,12 +31,11 @@ export function ChatMessage({ message, index, isLoading, onFeedbackChange }: Cha
     <div className={`
       flex items-start gap-3 message-enter
       ${isUser ? 'flex-row-reverse justify-start' : 'flex-row'}
-      ${deviceType === 'mobile' ? 'mx-2' : 'mx-4'}
     `}>
       {/* 消息内容 */}
       <div className={`
-        ${isUser ? 'max-w-[70%]' : 'w-full'}
-        ${deviceType === 'mobile' ? 'max-w-[calc(100%-1rem)]' : ''}
+        ${isUser ? 'max-w-[80%]' : 'w-full'}
+        ${deviceType === 'mobile' ? 'max-w-[calc(100%-2rem)]' : ''}
       `}>
         {/* 消息气泡 */}
         <div

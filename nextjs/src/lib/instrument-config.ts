@@ -30,7 +30,7 @@ const pipelineIdsPwrSeries: PipelineIdsSeries = {
 
 export const instrumentType: Record<string, InstrumentType> = {
     "OSC": { name: "示波器", pipelineIds: pipelineIdsOscSeries },
-    "AFG": { name: "信号发生器", pipelineIds: pipelineIdsAfgSeries },
-    "DMM": { name: "万用表", pipelineIds: pipelineIdsDmmSeries },
-    "PWR": { name: "电源", pipelineIds: pipelineIdsPwrSeries },
+    // "AFG": { name: "信号发生器", pipelineIds: pipelineIdsAfgSeries },
+    // "DMM": { name: "万用表", pipelineIds: pipelineIdsDmmSeries },
+    // "PWR": { name: "电源", pipelineIds: pipelineIdsPwrSeries },
 }; 

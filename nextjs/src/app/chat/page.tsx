@@ -40,13 +40,13 @@ function ChatArea() {
 
   return (
     <div className={`
-      flex-1 mb-4 overflow-hidden
+      flex-1 overflow-hidden
       ${deviceType === 'mobile' ? 'px-2' : 'px-4'}
     `}>
       <div 
         className={`
           ${deviceType === 'mobile' 
-            ? 'h-[calc(100vh-140px)]' 
+            ? 'h-[calc(100vh-200px)]' 
             : 'h-[calc(100vh-200px)]'
           }
           overflow-y-auto
@@ -186,7 +186,7 @@ function ChatPageInner() {
             ${deviceType === 'mobile' ? 'w-full' : ''}
           `} id="chat-area">
             <ChatArea />
-            <div className={deviceType === 'mobile' ? 'px-2 pb-2' : 'px-4 pb-4'}>
+            <div className={deviceType === 'mobile' ? 'px-2' : 'px-4'}>
               <ChatInput onSendMessage={sendMessage} isLoading={isLoading} />
             </div>
           </div>

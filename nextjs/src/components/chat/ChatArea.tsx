@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useChatContext } from '@/contexts/ChatContext';
 import { useUI } from '@/contexts/UIContext';
 import { ChatMessage } from '@/components/ChatMessage';
@@ -8,13 +8,45 @@ export function ChatArea() {
   const { messages, isLoading, handleFeedbackChange } = useChatContext();
   const { deviceType } = useUI();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
 
-  // 自动滚动到底部
-  useEffect(() => {
+  // 检测滚动位置
+  const handleScroll = () => {
+    if (!scrollAreaRef.current) return;
+    
+    const { scrollTop, scrollHeight, clientHeight } = scrollAreaRef.current;
+    // 考虑一个小的误差范围（1px），因为有时候不会完全相等
+    const isBottom = Math.abs(scrollHeight - scrollTop - clientHeight) <= 1;
+    setIsAtBottom(isBottom);
+  };
+
+  // 滚动到底部
+  const scrollToBottom = () => {
     if (scrollAreaRef.current) {
       scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
     }
-  }, [messages]);
+  };
+
+  // 监听滚动事件
+  useEffect(() => {
+    const scrollArea = scrollAreaRef.current;
+    if (scrollArea) {
+      scrollArea.addEventListener('scroll', handleScroll);
+      return () => scrollArea.removeEventListener('scroll', handleScroll);
+    }
+  }, []);
+
+  // 智能滚动：仅在底部时自动滚动
+  useEffect(() => {
+    if (isAtBottom) {
+      scrollToBottom();
+    }
+  }, [messages, isAtBottom]);
+
+  // 初始化时滚动到底部
+  useEffect(() => {
+    scrollToBottom();
+  }, []);
 
   return (
     <div className="flex-1 overflow-hidden">

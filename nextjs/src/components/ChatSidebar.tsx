@@ -8,6 +8,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useUI } from '@/contexts/UIContext';
 import { useChatContext } from '@/contexts/ChatContext';
 import { ChevronLeft, ChevronRight, X, Plus } from 'lucide-react';
+import { TooltipProvider } from '@radix-ui/react-tooltip';
+import { ActionTooltip } from './ui/ActionTooltip';
 
 interface ChatSession {
   id: string;
@@ -225,50 +227,60 @@ function SidebarContent({
   toggleSidebar
 }: SidebarContentProps) {
   return (
-    <>
+    <TooltipProvider>
       {/* 头部 */}
       <div className={`p-4  bg-muted flex flex-col gap-2 ${sidebarCollapsed ? '' : 'border-b'}`}>
         {/* 桌面端侧边栏折叠/展开按钮 */}
         {!showCloseButton && (
-          <Button
-            id="toggle-sidebar"
-            variant="ghost"
-            className={!sidebarCollapsed ? "w-full hover:bg-background" : "h-10 w-10 p-0 hover:bg-background"}
-            onClick={toggleSidebar}
-            aria-label={sidebarCollapsed ? "展开侧边栏" : "收起侧边栏"}
+          <ActionTooltip
+            label={sidebarCollapsed ? "展开侧边栏" : "收起侧边栏"}
+            side="right"
+            align="center"
+            sideOffset={10}
+            enabled={sidebarCollapsed}
           >
-            {sidebarCollapsed ? (
-              <ChevronRight className="h-4 w-4" />
-            ) : (
-              <>
-                <ChevronLeft className="h-4 w-4 mr-2" />
-                收起侧边栏
-              </>
-            )}
-          </Button>
+            <Button
+              id="toggle-sidebar"
+              variant="ghost"
+              className={!sidebarCollapsed ? "w-full hover:bg-background" : "h-10 w-10 p-0 hover:bg-background"}
+              onClick={toggleSidebar}
+              aria-label={sidebarCollapsed ? "展开侧边栏" : "收起侧边栏"}
+            >
+              {sidebarCollapsed ? (
+                <ChevronRight className="h-4 w-4" />
+              ) : (
+                <>
+                  <ChevronLeft className="h-4 w-4 mr-2" />
+                  收起侧边栏
+                </>
+              )}
+            </Button>
+          </ActionTooltip>
         )}
         
-        {!sidebarCollapsed ? (
+        <ActionTooltip
+          label="发起新对话"
+          side="right"
+          align="center"
+          sideOffset={10}
+          enabled={sidebarCollapsed}
+        >
           <Button 
             id="new-chat"
             onClick={onNewChat}
-            className="w-full hover:bg-background"
+            className={!sidebarCollapsed ? "w-full hover:bg-background" : "h-10 w-10 p-0 hover:bg-background"}
             variant="ghost"
           >
-            <Plus className="h-4 w-4 mr-2" />
-            发起新对话
+            {!sidebarCollapsed ? (
+              <>
+                <Plus className="h-4 w-4 mr-2" />
+                发起新对话
+              </>
+            ) : (
+              <Plus className="h-4 w-4" />
+            )}
           </Button>
-        ) : (
-          <Button 
-            id="new-chat"
-            onClick={onNewChat}
-            className="h-10 w-10 p-0 hover:bg-background"
-            variant="ghost"
-            title="发起新对话"
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
-        )}
+        </ActionTooltip>
       </div>
 
       {/* 历史对话列表 */}
@@ -309,21 +321,22 @@ function SidebarContent({
                       {formatTime(session.updatedAt)} • {session.messageCount} 条消息
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 h-6 w-6 p-0 hover:bg-destructive hover:text-destructive-foreground"
-                    onClick={(e) => onDeleteChat(session.id, e)}
-                    title="删除对话"
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
+                  <ActionTooltip label="删除对话" side="top">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 h-6 w-6 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                      onClick={(e) => onDeleteChat(session.id, e)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </ActionTooltip>
                 </div>
               </Card>
             ))}
           </div>
         )}
       </ScrollArea>
-    </>
+    </TooltipProvider>
   );
-} 
+}  

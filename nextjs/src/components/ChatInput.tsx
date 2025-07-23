@@ -7,6 +7,8 @@ import { instrumentType } from '@/lib/instrument-config';
 import { useChatContext } from '@/contexts/ChatContext';
 import { useUI } from '@/contexts/UIContext';
 import { ArrowUp, Square, Settings } from 'lucide-react';
+import { TooltipProvider } from '@radix-ui/react-tooltip';
+import { ActionTooltip } from './ui/ActionTooltip';
 
 interface ChatInputProps {
   onSendMessage: (message: string) => Promise<void>;
@@ -77,24 +79,26 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
 
   const renderInstrumentDialog = () => (
     <Dialog open={showInstrumentDialog} onOpenChange={setShowInstrumentDialog}>
-      <DialogTrigger asChild>
-        <Button
-          id="instrument-select"
-          variant="ghost"
-          disabled={isLoading}
-          className={`
-            flex items-center gap-2 justify-between px-3
-            ${deviceType === 'mobile' ? 'h-11' : 'h-10'}
-          `}
-        >
-          <div className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            <span className="truncate">
-              {currentSeriesName}
-            </span>
-          </div>
-        </Button>
-      </DialogTrigger>
+      <ActionTooltip label="仪器配置" side="top" align="center">
+        <DialogTrigger asChild>
+          <Button
+            id="instrument-select"
+            variant="ghost"
+            disabled={isLoading}
+            className={`
+              flex items-center gap-2 justify-between px-3
+              ${deviceType === 'mobile' ? 'h-11' : 'h-10'}
+            `}
+          >
+            <div className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              <span className="truncate">
+                {currentSeriesName}
+              </span>
+            </div>
+          </Button>
+        </DialogTrigger>
+      </ActionTooltip>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>仪器配置</DialogTitle>
@@ -151,55 +155,58 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
   );
 
   const renderSendButton = () => (
-    <Button
-      id="send-button"
-      onClick={(e) => {
-        e.preventDefault();
-        handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>);
-      }}
-      disabled={isLoading || !input.trim()}
-      className={`
-        button-enhanced rounded-full
-        ${deviceType === 'mobile' 
-          ? 'h-8 w-8 p-0' 
-          : 'h-8 w-8 px-4 gap-2'
-        }
-      `}
-      title={isLoading ? "发送中" : "发送"}
-    >
-      {isLoading ? (
-        deviceType === 'mobile' ? (
-          <Square className="h-5 w-5" />
+    <ActionTooltip label={isLoading ? "发送中" : "发送"} side="top" align="center">
+      <Button
+        id="send-button"
+        onClick={(e) => {
+          e.preventDefault();
+          handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>);
+        }}
+        disabled={isLoading || !input.trim()}
+        className={`
+          button-enhanced rounded-full
+          ${deviceType === 'mobile' 
+            ? 'h-8 w-8 p-0' 
+            : 'h-8 w-8 px-4 gap-2'
+          }
+        `}
+      >
+        {isLoading ? (
+          deviceType === 'mobile' ? (
+            <Square className="h-5 w-5" />
+          ) : (
+            <Square className="h-4 w-4" />
+          )
         ) : (
-          <Square className="h-4 w-4" />
-        )
-      ) : (
-        deviceType === 'mobile' ? (
-          <ArrowUp className="h-5 w-5" />
-        ) : (
-          <ArrowUp className="h-4 w-4" />
-        )
-      )}
-    </Button>
+          deviceType === 'mobile' ? (
+            <ArrowUp className="h-5 w-5" />
+          ) : (
+            <ArrowUp className="h-4 w-4" />
+          )
+        )}
+      </Button>
+    </ActionTooltip>
   );
 
   return (
-    <div className="mb-2 mx-4">
-      <div className="" id="chat-input-container">
-        <div className="flex flex-col border rounded-xl p-2">
-          <div className="w-full">
-            {renderInputForm()}
-          </div>
-          <div className="flex items-center justify-between w-full  text-base line-height-1">
-            {renderInstrumentDialog()}
-            {renderSendButton()}
+    <TooltipProvider>
+      <div className="mb-2 mx-4">
+        <div className="" id="chat-input-container">
+          <div className="flex flex-col border rounded-xl p-2">
+            <div className="w-full">
+              {renderInputForm()}
+            </div>
+            <div className="flex items-center justify-between w-full  text-base line-height-1">
+              {renderInstrumentDialog()}
+              {renderSendButton()}
+            </div>
           </div>
         </div>
+        
+        <p className="text-xs text-muted-foreground text-center pt-2">
+          AI生成内容未必准确，请仔细核查
+        </p>
       </div>
-      
-      <p className="text-xs text-muted-foreground text-center pt-2">
-        AI生成内容未必准确，请仔细核查
-      </p>
-    </div>
+    </TooltipProvider>
   );
 }

@@ -1,12 +1,8 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Copy, ThumbsUp, ThumbsDown, Check } from 'lucide-react';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { ActionTooltip } from "@/components/ui/ActionTooltip";
 
 interface MessageActionBarProps {
   messageId?: string;
@@ -57,64 +53,49 @@ export function MessageActionBar({
   return (
     <TooltipProvider>
       <div className="flex items-center gap-2 opacity-70 hover:opacity-100 transition-opacity">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCopy}
-              disabled={disabled}
-              className="h-8 w-8 p-0"
-            >
-              {copySuccess ? (
-                <Check className="h-4 w-4" />
-              ) : (
-                <Copy className="h-4 w-4" />
-              )}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{copySuccess ? '已复制' : '复制'}</p>
-          </TooltipContent>
-        </Tooltip>
+        <ActionTooltip label={copySuccess ? '已复制' : '复制'}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleCopy}
+            disabled={disabled}
+            className="h-8 w-8 p-0"
+          >
+            {copySuccess ? (
+              <Check className="h-4 w-4" />
+            ) : (
+              <Copy className="h-4 w-4" />
+            )}
+          </Button>
+        </ActionTooltip>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleFeedback('like')}
-              disabled={disabled || isUpdating}
-              className={`h-8 w-8 p-0 ${
-                feedback === 'like' ? 'text-green-600 bg-green-50' : ''
-              }`}
-            >
-              <ThumbsUp className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>点赞</p>
-          </TooltipContent>
-        </Tooltip>
+        <ActionTooltip label="点赞">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleFeedback('like')}
+            disabled={disabled || isUpdating}
+            className={`h-8 w-8 p-0 ${
+              feedback === 'like' ? 'text-green-600 bg-green-50' : ''
+            }`}
+          >
+            <ThumbsUp className="h-4 w-4" />
+          </Button>
+        </ActionTooltip>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleFeedback('dislike')}
-              disabled={disabled || isUpdating}
-              className={`h-8 w-8 p-0 ${
-                feedback === 'dislike' ? 'text-red-600 bg-red-50' : ''
-              }`}
-            >
-              <ThumbsDown className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>点踩</p>
-          </TooltipContent>
-        </Tooltip>
+        <ActionTooltip label="点踩">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleFeedback('dislike')}
+            disabled={disabled || isUpdating}
+            className={`h-8 w-8 p-0 ${
+              feedback === 'dislike' ? 'text-red-600 bg-red-50' : ''
+            }`}
+          >
+            <ThumbsDown className="h-4 w-4" />
+          </Button>
+        </ActionTooltip>
       </div>
     </TooltipProvider>
   );

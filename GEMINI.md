@@ -37,7 +37,7 @@ All commands should be run from the `nextjs/` directory.
   - This command uses Wrangler to simulate the Cloudflare environment locally.
 - **Build for production**: `pnpm build`
 - **Lint code**: `pnpm lint`
-- **Type check**: `pnpm run check` (builds and runs `tsc`)
+- **Type check**: `pnpm run check` (builds and runs `tsc`)，do not exe this cmd.
 - **Deploy to Cloudflare**: `pnpm run deploy`
   - This script chains `opennextjs-cloudflare build` and `opennextjs-cloudflare deploy`.
 

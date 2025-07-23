@@ -23,7 +23,7 @@ export function Welcome() {
       <div className="flex flex-col items-center justify-center h-full px-8 text-center w-full">
         <div className="max-w-2xl">
           <h2 className="text-2xl font-bold mb-4 text-foreground">
-            欢迎使用 OWON AI 助手
+            欢迎使用 OWON 小欧AI 助手
           </h2>
           <p className="text-muted-foreground mb-8 text-lg">
             我是您的专业测试测量设备助手，可以帮助您解答关于OWON的示波器、信号发生器等设备的问题。

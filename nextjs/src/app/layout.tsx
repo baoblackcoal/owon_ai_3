@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "OWON AI",
-  description: "OWON AI 智能对话助手",
+  title: "OWON 小欧AI 助手",
+  description: "OWON 小欧AI 助手",
 };
 
 export default function RootLayout({

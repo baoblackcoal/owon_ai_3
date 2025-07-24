@@ -97,24 +97,66 @@
 - **`likes` 表**:
   - `id`, `question_id` (或 `answer_id`), `user_id`, `created_at`
 
-## 5. API 设计要点
+## 4.1. 命名调整与新增字段（faq 前缀）
 
-- **`GET /api/qna`**:
-  - **功能**: 获取问答集列表的核心接口。
-  - **参数**:
-    - `search`: 搜索关键词 (string)
-    - `category`: 分类ID (integer)
-    - `model`: 机型ID (integer)
-    - `tags`: 标签ID列表，逗号分隔 (string, e.g., "1,5,12")
-    - `sort_by`: 排序方式 (`latest`, `best`, `ranking`)
-    - `period`: 时间周期，当 `sort_by=ranking` 时生效 (`week`, `month`, `quarter`, `year`, `all`)
-  - **返回**: 分页的问答列表。
-- **`GET /api/filters`**:
-  - **功能**: 获取所有可用的过滤器选项。
-  - **返回**: `{ "categories": [...], "models": [...], "tags": [...] }`，用于前端动态生成过滤菜单。
+- 所有表均统一增加 `faq_` 前缀，以与其他业务表区分。
+- **`faq_questions` 表**  
+  - 原 `questions` 表重命名。  
+  - 新增：`software_version` (Text, Nullable) —— 适用于固件或 PC 软件版本说明。  
+  - (保留) `product_model_id`，可为空。
+- **`faq_answers` 表**（新建，支持后续一问多答）  
+  - `id`, `question_id` (ForeignKey → `faq_questions`), `content`,  
+  - `software_version` (Text, Nullable), `product_model_id` (ForeignKey → `faq_product_models`, Nullable),  
+  - `created_at`, `likes_count` (Integer, default 0)  
+- 其余关联表同步改名：  
+  - `categories` → `faq_categories`  
+  - `product_models` → `faq_product_models`  
+  - `tags` → `faq_tags`  
+  - `question_tags` → `faq_question_tags`  
+  - `likes` → `faq_likes`  
+
+## 5.1. API 路由命名调整（改为 /api/faq/*）
+
+- `GET /api/faq` 获取 FAQ 列表（原 `/api/qna`）。  
+- `GET /api/faq/:id` 获取单条 FAQ 详情。  
+- `GET /api/faq/filters` 获取过滤器选项（原 `/api/filters`）。  
+- 其余派生接口（如点赞）同理替换为 `/api/faq` 前缀。  
 
 ## 6. 非功能性需求
 
 - **性能**: 复杂的过滤和排序查询响应时间应在1秒以内。需要对数据库查询进行优化，并可能使用缓存。
 - **可用性**: 过滤和排序控件必须直观易用，在移动设备上也要有良好的体验。
 - **数据准确性**: 观看量、点赞数等统计数据必须准确。观看量应有防刷机制（如限制同一用户短时间内的重复计数）。 
+
+## 7. 安全与权限
+- **角色划分**  
+  - `guest`：仅浏览与搜索, 点赞提示注册或登录。  
+  - `user`：可点赞／取消点赞、复制答案。  
+  - `admin`：后台管理、CSV 导入、软删除。  
+- **访问控制**  
+  - 前端根据 `role` 动态显示入口；后端统一使用中间件校验 JWT。  
+- **数据保护**  
+  - 点赞接口使用 POST，校验 `Origin`，防 CSRF。  
+
+## 8. CSV 导入与批量管理
+- **文件格式**：UTF-8；表头 `instrument_type,series,model,software_version,title,content,tags`。  
+- **导入流程**：上传 → 生成 `import_job` → worker 异步解析 → 状态回写。  
+- **冲突策略**：以 `title + model + software_version` 为唯一键；冲突则更新。  
+
+## 9. 交互细节
+- **点赞**：禁止重复；再次点击取消；前端乐观更新。  
+- **复制答案**：弹出 Toast `已复制到剪贴板`；埋点 `copy_answer`。  
+
+## 10. 可访问性
+- 元素提供 `aria-label`；颜色对比度符合 WCAG 2.1 AA。  
+
+## 11. 日志与监控
+- 行为日志写入 `faq_analytics`；监控接入 Cloudflare Analytics & Sentry。  
+
+## 12. 上线 & 迭代计划
+| 里程碑 | 目标 | 预计完成 |
+| --- | --- | --- |
+| M1 | DB 迁移脚本、FAQ 列表页 | +1 周 |
+| M2 | 搜索 / 过滤 / 排序、点赞、复制 | +3 周 |
+| M3 | CSV 导入、后台管理 | +5 周 |
+| M4 | 可访问性、监控告警 | +7 周 | 

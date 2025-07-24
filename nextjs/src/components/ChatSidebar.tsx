@@ -7,9 +7,10 @@ import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useUI } from '@/contexts/UIContext';
 import { useChatContext } from '@/contexts/ChatContext';
-import { ChevronLeft, ChevronRight, X, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Plus, Headphones } from 'lucide-react';
 import { TooltipProvider } from '@radix-ui/react-tooltip';
 import { ActionTooltip } from './ui/ActionTooltip';
+import ServiceDialog from './ServiceDialog';
 
 interface ChatSession {
   id: string;
@@ -29,6 +30,7 @@ export default function ChatSidebar({ currentChatId, onChatSelect, onNewChat }: 
   const { data: session, status } = useSession();
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showServiceDialog, setShowServiceDialog] = useState(false);
   const { setHistoryRefreshCallback } = useChatContext();
   
   const { 
@@ -162,35 +164,49 @@ export default function ChatSidebar({ currentChatId, onChatSelect, onNewChat }: 
             showCloseButton={true}
             onClose={() => setMobileSidebarOpen(false)}
             toggleSidebar={toggleSidebar}
+            onServiceClick={() => setShowServiceDialog(true)}
           />
         </div>
+        
+        <ServiceDialog
+          isOpen={showServiceDialog}
+          onClose={() => setShowServiceDialog(false)}
+        />
       </>
     );
   }
 
   // 桌面端和平板端：固定侧边栏
   return (
-    <div className={`
-      relative h-full bg-muted border-r flex flex-col
-      transition-all duration-300 ease-in-out
-      ${sidebarCollapsed ? 'w-16' : 'w-64'}
-    `}>
-      
+    <>
+      <div className={`
+        relative h-full bg-muted border-r flex flex-col
+        transition-all duration-300 ease-in-out
+        ${sidebarCollapsed ? 'w-16' : 'w-64'}
+      `}>
+        
 
-      <SidebarContent 
-        loading={loading}
-        status={status}
-        session={session}
-        chatSessions={chatSessions}
-        currentChatId={currentChatId}
-        sidebarCollapsed={sidebarCollapsed}
-        onNewChat={onNewChat}
-        onChatSelect={onChatSelect}
-        onDeleteChat={handleDeleteChat}
-        formatTime={formatTime}
-        toggleSidebar={toggleSidebar}
+        <SidebarContent 
+          loading={loading}
+          status={status}
+          session={session}
+          chatSessions={chatSessions}
+          currentChatId={currentChatId}
+          sidebarCollapsed={sidebarCollapsed}
+          onNewChat={onNewChat}
+          onChatSelect={onChatSelect}
+          onDeleteChat={handleDeleteChat}
+          formatTime={formatTime}
+          toggleSidebar={toggleSidebar}
+          onServiceClick={() => setShowServiceDialog(true)}
+        />
+      </div>
+      
+      <ServiceDialog
+        isOpen={showServiceDialog}
+        onClose={() => setShowServiceDialog(false)}
       />
-    </div>
+    </>
   );
 }
 
@@ -210,6 +226,7 @@ interface SidebarContentProps {
   showCloseButton?: boolean;
   onClose?: () => void;
   toggleSidebar: () => void;
+  onServiceClick?: () => void;
 }
 
 function SidebarContent({
@@ -224,7 +241,8 @@ function SidebarContent({
   onDeleteChat,
   formatTime,
   showCloseButton = false,
-  toggleSidebar
+  toggleSidebar,
+  onServiceClick
 }: SidebarContentProps) {
   return (
     <TooltipProvider>
@@ -284,7 +302,7 @@ function SidebarContent({
       </div>
 
       {/* 历史对话列表 */}
-      <ScrollArea className="flex-1 p-2 h-[calc(100vh-180px)]  bg-muted">
+      <ScrollArea className="flex-1 p-2 h-[calc(100vh-240px)]  bg-muted">
         {loading || status === 'loading' ? (
           <div className="text-center text-muted-foreground py-4">
             {sidebarCollapsed ? null : '加载中...'}
@@ -337,6 +355,35 @@ function SidebarContent({
           </div>
         )}
       </ScrollArea>
+      
+      {/* 底部人工服务按钮 */}
+      {onServiceClick && (
+        <div className="p-4 border-t bg-muted">
+          <ActionTooltip
+            label="人工服务"
+            side="right"
+            align="center"
+            sideOffset={10}
+            enabled={sidebarCollapsed}
+          >
+            <Button 
+              id="human-service"
+              onClick={onServiceClick}
+              className={!sidebarCollapsed ? "w-full hover:bg-background" : "h-10 w-10 p-0 hover:bg-background"}
+              variant="ghost"
+            >
+              {!sidebarCollapsed ? (
+                <>
+                  <Headphones className="h-4 w-4 mr-2" />
+                  人工服务 🛎️
+                </>
+              ) : (
+                <span className="text-lg">🛎️</span>
+              )}
+            </Button>
+          </ActionTooltip>
+        </div>
+      )}
     </TooltipProvider>
   );
 }  

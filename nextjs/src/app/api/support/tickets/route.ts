@@ -57,8 +57,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreateSup
       INSERT INTO support_tickets (
         id, user_id, company, last_name, email, 
         device_type, device_series, software_version, 
-        instrument_model, detail, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        instrument_model, detail
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     await stmt.bind(
@@ -71,8 +71,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreateSup
       validatedData.deviceSeries,
       validatedData.softwareVersion,
       validatedData.instrumentModel,
-      validatedData.detail,
-      Math.floor(Date.now() / 1000)
+      validatedData.detail
     ).run();
 
     return NextResponse.json(

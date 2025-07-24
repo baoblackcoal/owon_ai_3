@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS support_tickets (
     software_version TEXT NOT NULL,       -- 软件版本号（必填）
     instrument_model TEXT NOT NULL,       -- 仪器型号（必填）
     detail TEXT NOT NULL,                 -- 问题详情（必填）
-    created_at INTEGER NOT NULL DEFAULT (unixepoch())
+    processed INTEGER NOT NULL DEFAULT 0, -- 0=未处理, 1=已处理
+    created_at TEXT DEFAULT (strftime('%Y-%m-%d %H:%M:%S', 'now', 'localtime')) NOT NULL
 );
 
 -- 创建索引以提高查询性能

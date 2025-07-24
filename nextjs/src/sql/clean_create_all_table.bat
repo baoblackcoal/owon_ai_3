@@ -42,6 +42,8 @@ call npx wrangler d1 execute DB %REMOTE_FLAG% --command "DROP TABLE IF EXISTS Ch
 if %ERRORLEVEL% neq 0 goto :error
 call npx wrangler d1 execute DB %REMOTE_FLAG% --command "DROP TABLE IF EXISTS User;"
 if %ERRORLEVEL% neq 0 goto :error
+call npx wrangler d1 execute DB %REMOTE_FLAG% --command "DROP TABLE IF EXISTS support_tickets;"
+if %ERRORLEVEL% neq 0 goto :error
 
 echo.
 echo Creating tables in order...
@@ -63,7 +65,11 @@ call npx wrangler d1 execute DB %REMOTE_FLAG% --file "src\sql\0004_create_users_
 if %ERRORLEVEL% neq 0 goto :error
 
 echo 5. Adding user ID to chat tables...
-call npx wrangler d1 execute DB %REMOTE_FLAG% --file "src\sql\0005_add_user_id_to_chat_tables.sql"
+call npx wrangler d1 execute DB %REMOTE_FLAG% --file "src/sql/0005_add_user_id_to_chat_tables.sql"
+if %ERRORLEVEL% neq 0 goto :error
+
+echo 6. Creating support tickets table...
+call npx wrangler d1 execute DB %REMOTE_FLAG% --file "src/sql/0006_create_support_tickets_table.sql"
 if %ERRORLEVEL% neq 0 goto :error
 
 echo.

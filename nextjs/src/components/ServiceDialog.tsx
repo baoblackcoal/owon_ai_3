@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { getInstrumentTypeOptions, getInstrumentSeriesOptions, isValidInstrumentCombination } from '@/lib/instrument-config';
 import { useChatContext } from '@/contexts/ChatContext';
 import type { CreateSupportTicketResponse } from '@/types/support';
+import { Headphones } from 'lucide-react';
 
 // 表单验证schema
 const supportTicketSchema = z.object({
@@ -144,7 +145,7 @@ export default function ServiceDialog({ isOpen, onClose, onSuccess }: ServiceDia
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>人工服务 🛎️</DialogTitle>
+            <DialogTitle  className="flex items-center"> <Headphones className="h-4 w-4 mr-4" /> 人工服务  </DialogTitle>
           </DialogHeader>
           
           <Card className="border-0 shadow-none">

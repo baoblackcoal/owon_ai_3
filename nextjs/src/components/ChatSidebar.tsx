@@ -375,10 +375,10 @@ function SidebarContent({
               {!sidebarCollapsed ? (
                 <>
                   <Headphones className="h-4 w-4 mr-2" />
-                  人工服务 🛎️
+                  人工服务
                 </>
               ) : (
-                <span className="text-lg">🛎️</span>
+                <Headphones className="h-4 w-4 mr-2" />
               )}
             </Button>
           </ActionTooltip>

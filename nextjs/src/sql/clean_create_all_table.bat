@@ -36,6 +36,20 @@ if /i not "%CONFIRM%"=="y" (
 
 echo.
 echo Dropping existing tables...
+call npx wrangler d1 execute DB %REMOTE_FLAG% --command "DROP TABLE IF EXISTS faq_likes;"
+if %ERRORLEVEL% neq 0 goto :error
+call npx wrangler d1 execute DB %REMOTE_FLAG% --command "DROP TABLE IF EXISTS faq_question_tags;"
+if %ERRORLEVEL% neq 0 goto :error
+call npx wrangler d1 execute DB %REMOTE_FLAG% --command "DROP TABLE IF EXISTS faq_tags;"
+if %ERRORLEVEL% neq 0 goto :error
+call npx wrangler d1 execute DB %REMOTE_FLAG% --command "DROP TABLE IF EXISTS faq_answers;"
+if %ERRORLEVEL% neq 0 goto :error
+call npx wrangler d1 execute DB %REMOTE_FLAG% --command "DROP TABLE IF EXISTS faq_questions;"
+if %ERRORLEVEL% neq 0 goto :error
+call npx wrangler d1 execute DB %REMOTE_FLAG% --command "DROP TABLE IF EXISTS faq_product_models;"
+if %ERRORLEVEL% neq 0 goto :error
+call npx wrangler d1 execute DB %REMOTE_FLAG% --command "DROP TABLE IF EXISTS faq_categories;"
+if %ERRORLEVEL% neq 0 goto :error
 call npx wrangler d1 execute DB %REMOTE_FLAG% --command "DROP TABLE IF EXISTS ChatMessage;"
 if %ERRORLEVEL% neq 0 goto :error
 call npx wrangler d1 execute DB %REMOTE_FLAG% --command "DROP TABLE IF EXISTS Chat;"
@@ -70,6 +84,10 @@ if %ERRORLEVEL% neq 0 goto :error
 
 echo 6. Creating support tickets table...
 call npx wrangler d1 execute DB %REMOTE_FLAG% --file "src/sql/0006_create_support_tickets_table.sql"
+if %ERRORLEVEL% neq 0 goto :error
+
+echo 7. Creating FAQ tables...
+call npx wrangler d1 execute DB %REMOTE_FLAG% --file "src/sql/0007_create_faq_tables.sql"
 if %ERRORLEVEL% neq 0 goto :error
 
 echo.

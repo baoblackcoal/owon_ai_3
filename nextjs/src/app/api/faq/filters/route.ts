@@ -1,20 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCloudflareContext } from '@/lib/env';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 import type { FaqFiltersResponse } from '@/types/faq';
 
 export async function GET(request: NextRequest) {
   try {
     const { env } = await getCloudflareContext();
     
+    // 通过类型断言解决 linter 对 env.DB 的类型提示
+    const db = (env as unknown as { DB?: D1Database }).DB;
+
+    if (!db) {
+      return NextResponse.json(
+        { error: 'D1 数据库未绑定，请使用 `npm run preview` 或部署到 Cloudflare 后再访问此接口' },
+        { status: 500 }
+      );
+    }
+    
     // 获取分类列表
-    const categoriesResult = await env.DB.prepare(`
+    const categoriesResult = await db.prepare(`
       SELECT id, name, description, created_at 
       FROM faq_categories 
       ORDER BY name ASC
     `).all();
 
     // 获取机型列表（包含分类关联）
-    const modelsResult = await env.DB.prepare(`
+    const modelsResult = await db.prepare(`
       SELECT 
         pm.id, 
         pm.category_id, 
@@ -27,7 +37,7 @@ export async function GET(request: NextRequest) {
     `).all();
 
     // 获取标签列表
-    const tagsResult = await env.DB.prepare(`
+    const tagsResult = await db.prepare(`
       SELECT id, name, created_at 
       FROM faq_tags 
       ORDER BY name ASC

@@ -1,8 +1,12 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // 获取查询参数
+    const searchParams = request.nextUrl.searchParams;
+    const table = searchParams.get('table') || 'faq_categories';
+
     // 获取 Cloudflare 运行时上下文中的 D1 数据库实例
     const { env } = await getCloudflareContext();
 
@@ -17,11 +21,25 @@ export async function GET() {
       );
     }
 
-    const { results } = await db.prepare(
-      "SELECT * FROM Customers WHERE CompanyName = ?",
-    )
-      .bind("Bs Beverages")
-      .all();
+    let query = '';
+    switch (table) {
+      case 'faq_categories':
+        query = 'SELECT * FROM faq_categories ORDER BY name ASC';
+        break;
+      case 'faq_product_models':
+        query = 'SELECT * FROM faq_product_models ORDER BY name ASC';
+        break;
+      case 'faq_tags':
+        query = 'SELECT * FROM faq_tags ORDER BY name ASC';
+        break;
+      default:
+        return NextResponse.json(
+          { error: '不支持的表名' },
+          { status: 400 }
+        );
+    }
+
+    const { results } = await db.prepare(query).all();
 
     // 返回查询结果
     return NextResponse.json(results);

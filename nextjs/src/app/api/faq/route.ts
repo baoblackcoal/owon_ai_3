@@ -1,11 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCloudflareContext } from '@/lib/env';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 import type { FaqListParams, FaqListResponse } from '@/types/faq';
 
 export async function GET(request: NextRequest) {
   try {
     const { env } = await getCloudflareContext();
     const { searchParams } = new URL(request.url);
+    
+    // 通过类型断言解决 linter 对 env.DB 的类型提示
+    const db = (env as unknown as { DB?: D1Database }).DB;
+
+    if (!db) {
+      return NextResponse.json(
+        { error: 'D1 数据库未绑定，请使用 `npm run preview` 或部署到 Cloudflare 后再访问此接口' },
+        { status: 500 }
+      );
+    }
     
     // 解析查询参数
     const params: FaqListParams = {
@@ -141,7 +151,7 @@ export async function GET(request: NextRequest) {
     queryParams.push(params.limit! + 1); // 多取一条用于判断是否有下一页
 
     // 执行查询
-    const result = await env.DB.prepare(baseQuery).bind(...queryParams).all();
+    const result = await db.prepare(baseQuery).bind(...queryParams).all();
     const questions = result.results as any[];
 
     // 判断是否有下一页
@@ -165,7 +175,7 @@ export async function GET(request: NextRequest) {
         WHERE qt.question_id IN (${questionIds.map(() => '?').join(',')})
         ORDER BY t.name ASC
       `;
-      const tagsResult = await env.DB.prepare(tagsQuery).bind(...questionIds).all();
+      const tagsResult = await db.prepare(tagsQuery).bind(...questionIds).all();
       questionTags = tagsResult.results as any[];
     }
 

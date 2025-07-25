@@ -1,40 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { FaqListParams, FaqListResponse } from '@/types/faq';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import type { FaqListParams, FaqListResponse } from '@/types/faq';
 
 export async function GET(request: NextRequest) {
   try {
-    const { env } = await getCloudflareContext();
     const { searchParams } = new URL(request.url);
-    
-    // 通过类型断言解决 linter 对 env.DB 的类型提示
-    const db = (env as unknown as { DB?: D1Database }).DB;
+    const { env } = await getCloudflareContext();
 
-    if (!db) {
-      return NextResponse.json(
-        { error: 'D1 数据库未绑定，请使用 `npm run preview` 或部署到 Cloudflare 后再访问此接口' },
-        { status: 500 }
-      );
-    }
-    
     // 解析查询参数
     const params: FaqListParams = {
       q: searchParams.get('q') || undefined,
       category_id: searchParams.get('category_id') || undefined,
       product_model_id: searchParams.get('product_model_id') || undefined,
       tag_id: searchParams.get('tag_id') || undefined,
-      sort: (searchParams.get('sort') as any) || 'latest',
-      period: (searchParams.get('period') as any) || 'all',
+      sort: (searchParams.get('sort') as FaqListParams['sort']) || 'latest',
+      period: (searchParams.get('period') as FaqListParams['period']) || 'all',
       limit: parseInt(searchParams.get('limit') || '20'),
-      cursor: searchParams.get('cursor') || undefined
+      cursor: searchParams.get('cursor') || undefined,
     };
 
-    // 构建基础 SQL 查询
+    // TODO: 后续添加用户认证
+    const userId: string | null = null;
+
+    // 构建基础查询
     let baseQuery = `
-      SELECT DISTINCT
+      SELECT 
         q.id,
         q.title,
         q.content,
+        q.answer,
         q.category_id,
         q.product_model_id,
         q.software_version,
@@ -44,171 +38,186 @@ export async function GET(request: NextRequest) {
         q.created_at,
         q.updated_at,
         c.name as category_name,
-        pm.name as product_model_name
+        pm.name as product_model_name,
+        CASE WHEN l.id IS NOT NULL THEN 1 ELSE 0 END as is_liked
       FROM faq_questions q
       LEFT JOIN faq_categories c ON q.category_id = c.id
       LEFT JOIN faq_product_models pm ON q.product_model_id = pm.id
+      LEFT JOIN faq_likes l ON q.id = l.question_id AND l.user_id = ?
     `;
 
-    const conditions: string[] = [];
-    const queryParams: any[] = [];
+    const queryParams: any[] = [userId];
 
-    // 标签关联查询
-    if (params.tag_id) {
-      baseQuery += ` 
-        INNER JOIN faq_question_tags qt ON q.id = qt.question_id 
-        INNER JOIN faq_tags t ON qt.tag_id = t.id
-      `;
-      conditions.push('t.id = ?');
-      queryParams.push(params.tag_id);
-    }
+    // 添加WHERE条件
+    const whereConditions: string[] = [];
 
     // 搜索条件
     if (params.q) {
-      conditions.push(`(
-        q.title LIKE ? OR 
-        q.content LIKE ? OR
-        EXISTS (
-          SELECT 1 FROM faq_question_tags qt2 
-          INNER JOIN faq_tags t2 ON qt2.tag_id = t2.id 
-          WHERE qt2.question_id = q.id AND t2.name LIKE ?
-        )
-      )`);
-      const searchTerm = `%${params.q}%`;
-      queryParams.push(searchTerm, searchTerm, searchTerm);
+      whereConditions.push('(q.title LIKE ? OR q.content LIKE ? OR q.answer LIKE ?)');
+      const searchPattern = `%${params.q}%`;
+      queryParams.push(searchPattern, searchPattern, searchPattern);
     }
 
     // 分类筛选
     if (params.category_id) {
-      conditions.push('q.category_id = ?');
+      whereConditions.push('q.category_id = ?');
       queryParams.push(params.category_id);
     }
 
-    // 机型筛选
+    // 产品型号筛选
     if (params.product_model_id) {
-      conditions.push('q.product_model_id = ?');
+      whereConditions.push('q.product_model_id = ?');
       queryParams.push(params.product_model_id);
     }
 
-    // 时间范围筛选（仅在排行模式下）
-    if (params.sort === 'ranking' && params.period !== 'all') {
-      const now = new Date();
-      let timeLimit: Date;
-      
-      switch (params.period) {
-        case 'week':
-          timeLimit = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-          break;
-        case 'month':
-          timeLimit = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-          break;
-        case 'quarter':
-          timeLimit = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-          break;
-        case 'year':
-          timeLimit = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-          break;
-        default:
-          timeLimit = new Date(0);
+    // 标签筛选
+    if (params.tag_id) {
+      baseQuery = `
+        SELECT DISTINCT
+          q.id,
+          q.title,
+          q.content,
+          q.answer,
+          q.category_id,
+          q.product_model_id,
+          q.software_version,
+          q.views_count,
+          q.likes_count,
+          q.created_by,
+          q.created_at,
+          q.updated_at,
+          c.name as category_name,
+          pm.name as product_model_name,
+          CASE WHEN l.id IS NOT NULL THEN 1 ELSE 0 END as is_liked
+        FROM faq_questions q
+        LEFT JOIN faq_categories c ON q.category_id = c.id
+        LEFT JOIN faq_product_models pm ON q.product_model_id = pm.id
+        LEFT JOIN faq_likes l ON q.id = l.question_id AND l.user_id = ?
+        INNER JOIN faq_question_tags qt ON q.id = qt.question_id
+      `;
+      whereConditions.push('qt.tag_id = ?');
+      queryParams.push(params.tag_id);
+    }
+
+    // 我的分享筛选（仅登录用户）
+    if (params.sort === 'my-share' && userId) {
+      whereConditions.push('q.created_by = ?');
+      queryParams.push(userId);
+    }
+
+    // 时间范围筛选（仅在ranking排序时生效）
+    if (params.sort === 'ranking' && params.period && params.period !== 'all') {
+      const periodMap: Record<string, string> = {
+        week: "datetime('now', '-7 days')",
+        month: "datetime('now', '-1 month')",
+        quarter: "datetime('now', '-3 months')",
+        year: "datetime('now', '-1 year')",
+      };
+      if (periodMap[params.period]) {
+        whereConditions.push(`q.created_at >= ${periodMap[params.period]}`);
       }
-      
-      conditions.push('q.created_at >= ?');
-      queryParams.push(timeLimit.toISOString().slice(0, 19).replace('T', ' '));
     }
 
     // 分页条件
     if (params.cursor) {
-      conditions.push('q.id > ?');
+      whereConditions.push('q.created_at < ?');
       queryParams.push(params.cursor);
     }
 
-    // 添加 WHERE 条件
-    if (conditions.length > 0) {
-      baseQuery += ' WHERE ' + conditions.join(' AND ');
+    // 添加WHERE子句
+    if (whereConditions.length > 0) {
+      baseQuery += ' WHERE ' + whereConditions.join(' AND ');
     }
 
-    // 排序
-    let orderBy = '';
-    switch (params.sort) {
-      case 'latest':
-        orderBy = 'ORDER BY q.created_at DESC';
-        break;
-      case 'best':
-        orderBy = 'ORDER BY q.likes_count DESC, q.created_at DESC';
-        break;
-      case 'ranking':
-        orderBy = 'ORDER BY q.views_count DESC, q.created_at DESC';
-        break;
-      case 'my-share':
-        // TODO: 需要用户认证，暂时按创建时间排序
-        orderBy = 'ORDER BY q.created_at DESC';
-        break;
-      default:
-        orderBy = 'ORDER BY q.created_at DESC';
-    }
+    // 添加排序
+    const sortMap = {
+      latest: 'q.created_at DESC',
+      best: 'q.likes_count DESC, q.created_at DESC',
+      ranking: 'q.views_count DESC, q.created_at DESC',
+      'my-share': 'q.created_at DESC',
+    };
+    baseQuery += ` ORDER BY ${sortMap[params.sort]}`;
 
-    baseQuery += ` ${orderBy} LIMIT ?`;
-    queryParams.push(params.limit! + 1); // 多取一条用于判断是否有下一页
+    // 添加限制
+    const limit = params.limit || 20;
+    baseQuery += ` LIMIT ${limit + 1}`;
 
     // 执行查询
-    const result = await db.prepare(baseQuery).bind(...queryParams).all();
-    const questions = result.results as any[];
+    const result = await env.DB.prepare(baseQuery).bind(...queryParams).all();
+    const questions = result.results || [];
 
-    // 判断是否有下一页
-    const hasNextPage = questions.length > params.limit!;
-    if (hasNextPage) {
-      questions.pop(); // 移除多取的一条
+    // 处理分页
+    let nextCursor: string | undefined;
+    if (questions.length > limit) {
+      const lastItem = questions.pop();
+      nextCursor = (lastItem as any)?.created_at;
     }
 
     // 获取每个问题的标签
-    const questionIds = questions.map(q => q.id);
-    let questionTags: any[] = [];
-    
+    const questionIds = questions.map((q: any) => q.id);
+    let tagsMap: Record<string, any[]> = {};
+
     if (questionIds.length > 0) {
       const tagsQuery = `
-        SELECT 
-          qt.question_id,
-          t.id,
-          t.name
+        SELECT qt.question_id, t.id, t.name
         FROM faq_question_tags qt
         INNER JOIN faq_tags t ON qt.tag_id = t.id
         WHERE qt.question_id IN (${questionIds.map(() => '?').join(',')})
-        ORDER BY t.name ASC
       `;
-      const tagsResult = await db.prepare(tagsQuery).bind(...questionIds).all();
-      questionTags = tagsResult.results as any[];
+      const tagsResult = await env.DB.prepare(tagsQuery).bind(...questionIds).all();
+      
+      (tagsResult.results || []).forEach((tag: any) => {
+        if (!tagsMap[tag.question_id]) {
+          tagsMap[tag.question_id] = [];
+        }
+        tagsMap[tag.question_id].push({
+          id: tag.id,
+          name: tag.name,
+        });
+      });
     }
 
-    // 组装返回数据
-    const questionsWithTags = questions.map(question => ({
-      ...question,
-      category: question.category_name ? {
-        id: question.category_id,
-        name: question.category_name
-      } : null,
-      product_model: question.product_model_name ? {
-        id: question.product_model_id,
-        name: question.product_model_name
-      } : null,
-      tags: questionTags
-        .filter(tag => tag.question_id === question.id)
-        .map(tag => ({
-          id: tag.id,
-          name: tag.name
-        }))
+    // 格式化响应数据
+    const formattedQuestions = questions.map((q: any) => ({
+      id: q.id,
+      title: q.title,
+      content: q.content,
+      answer: q.answer,
+      category_id: q.category_id,
+      product_model_id: q.product_model_id,
+      software_version: q.software_version,
+      views_count: q.views_count,
+      likes_count: q.likes_count,
+      created_by: q.created_by,
+      created_at: q.created_at,
+      updated_at: q.updated_at,
+      is_liked: Boolean(q.is_liked),
+      category: q.category_name ? {
+        id: q.category_id,
+        name: q.category_name,
+        description: undefined,
+        created_at: '',
+      } : undefined,
+      product_model: q.product_model_name ? {
+        id: q.product_model_id,
+        name: q.product_model_name,
+        category_id: q.category_id,
+        created_at: '',
+      } : undefined,
+      tags: (q.id && tagsMap[q.id]) || [],
     }));
 
     const response: FaqListResponse = {
-      data: questionsWithTags,
-      nextCursor: hasNextPage ? questions[questions.length - 1]?.id : undefined
+      data: formattedQuestions,
+      nextCursor,
+      total: undefined, // 可选：如果需要总数可以单独查询
     };
 
     return NextResponse.json(response);
-
   } catch (error) {
-    console.error('[FAQ List API Error]:', error);
+    console.error('FAQ list API error:', error);
     return NextResponse.json(
-      { error: '获取问题列表失败' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

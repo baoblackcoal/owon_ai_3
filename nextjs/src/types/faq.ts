@@ -24,6 +24,7 @@ export interface FaqQuestion {
   id: string;
   title: string;
   content: string;
+  answer: string; // Markdown 格式的官方答案
   category_id?: string;
   product_model_id?: string;
   software_version?: string;
@@ -36,29 +37,13 @@ export interface FaqQuestion {
   category?: FaqCategory;
   product_model?: FaqProductModel;
   tags?: FaqTag[];
-  answers?: FaqAnswer[];
-  is_liked?: boolean; // 当前用户是否已点赞
-}
-
-export interface FaqAnswer {
-  id: string;
-  question_id: string;
-  content: string;
-  software_version?: string;
-  product_model_id?: string;
-  likes_count: number;
-  created_by?: string;
-  created_at: string;
-  // 关联数据
-  product_model?: FaqProductModel;
   is_liked?: boolean; // 当前用户是否已点赞
 }
 
 export interface FaqLike {
   id: string;
   user_id: string;
-  question_id?: string;
-  answer_id?: string;
+  question_id: string; // 现在只支持对问题点赞
   created_at: string;
 }
 
@@ -82,7 +67,6 @@ export interface FaqListResponse {
 
 export interface FaqDetailResponse {
   question: FaqQuestion;
-  answers: FaqAnswer[];
   related_questions?: FaqQuestion[]; // 相关推荐问题
 }
 
@@ -93,7 +77,7 @@ export interface FaqFiltersResponse {
 }
 
 export interface FaqLikeRequest {
-  target: 'question' | 'answer';
+  target: 'question'; // 现在只支持对问题点赞
 }
 
 // 前端 UI 相关类型

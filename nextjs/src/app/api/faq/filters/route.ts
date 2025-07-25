@@ -1,60 +1,70 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { FaqFiltersResponse } from '@/types/faq';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import type { FaqFiltersResponse } from '@/types/faq';
 
 export async function GET(request: NextRequest) {
   try {
     const { env } = await getCloudflareContext();
-    
-    // 通过类型断言解决 linter 对 env.DB 的类型提示
-    const db = (env as unknown as { DB?: D1Database }).DB;
 
-    if (!db) {
-      return NextResponse.json(
-        { error: 'D1 数据库未绑定，请使用 `npm run preview` 或部署到 Cloudflare 后再访问此接口' },
-        { status: 500 }
-      );
-    }
-    
-    // 获取分类列表
-    const categoriesResult = await db.prepare(`
-      SELECT id, name, description, created_at 
-      FROM faq_categories 
+    // 获取所有分类
+    const categoriesQuery = `
+      SELECT id, name, description, created_at
+      FROM faq_categories
       ORDER BY name ASC
-    `).all();
+    `;
+    const categoriesResult = await env.DB.prepare(categoriesQuery).all();
+    const categories = (categoriesResult.results || []).map((c: any) => ({
+      id: c.id,
+      name: c.name,
+      description: c.description,
+      created_at: c.created_at,
+    }));
 
-    // 获取机型列表（包含分类关联）
-    const modelsResult = await db.prepare(`
-      SELECT 
-        pm.id, 
-        pm.category_id, 
-        pm.name, 
-        pm.created_at,
-        c.name as category_name
+    // 获取所有产品型号
+    const modelsQuery = `
+      SELECT pm.id, pm.category_id, pm.name, pm.created_at
       FROM faq_product_models pm
-      LEFT JOIN faq_categories c ON pm.category_id = c.id
-      ORDER BY c.name ASC, pm.name ASC
-    `).all();
+      ORDER BY pm.name ASC
+    `;
+    const modelsResult = await env.DB.prepare(modelsQuery).all();
+    const product_models = (modelsResult.results || []).map((pm: any) => ({
+      id: pm.id,
+      category_id: pm.category_id,
+      name: pm.name,
+      created_at: pm.created_at,
+    }));
 
-    // 获取标签列表
-    const tagsResult = await db.prepare(`
-      SELECT id, name, created_at 
-      FROM faq_tags 
-      ORDER BY name ASC
-    `).all();
+    // 获取所有标签（包含使用次数）
+    const tagsQuery = `
+      SELECT 
+        t.id, 
+        t.name, 
+        t.created_at,
+        COUNT(qt.question_id) as question_count
+      FROM faq_tags t
+      LEFT JOIN faq_question_tags qt ON t.id = qt.tag_id
+      GROUP BY t.id, t.name, t.created_at
+      HAVING question_count > 0
+      ORDER BY question_count DESC, t.name ASC
+    `;
+    const tagsResult = await env.DB.prepare(tagsQuery).all();
+    const tags = (tagsResult.results || []).map((t: any) => ({
+      id: t.id,
+      name: t.name,
+      created_at: t.created_at,
+    }));
 
     const response: FaqFiltersResponse = {
-      categories: categoriesResult.results as any[],
-      product_models: modelsResult.results as any[],
-      tags: tagsResult.results as any[]
+      categories,
+      product_models,
+      tags,
     };
 
     return NextResponse.json(response);
-
   } catch (error) {
-    console.error('[FAQ Filters API Error]:', error);
+    console.error('FAQ filters API error:', error);
     return NextResponse.json(
-      { error: '获取筛选器数据失败' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

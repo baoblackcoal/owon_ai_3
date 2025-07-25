@@ -10,7 +10,7 @@ import FaqQuestionList from '@/components/faq/FaqQuestionList';
 
 function FaqPageContent() {
   return (
-    <div className="container mx-auto px-8 py-4 max-w-7xl">
+    <div className="container mx-auto px-8 py-4 max-w-7xl h-full overflow-auto">
       {/* 页面标题区域 */}
       <FaqHeader />
 
@@ -38,4 +38,4 @@ export default function FaqPage() {
       <FaqPageContent />
     </FaqProvider>
   );
-}
+} 

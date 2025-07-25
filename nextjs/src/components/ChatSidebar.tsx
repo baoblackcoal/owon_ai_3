@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
+import { useRouter, usePathname } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useUI } from '@/contexts/UIContext';
 import { useChatContext } from '@/contexts/ChatContext';
-import { ChevronLeft, ChevronRight, X, Plus, Headphones } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Plus, Headphones, MessageSquare, HelpCircle } from 'lucide-react';
 import { TooltipProvider } from '@radix-ui/react-tooltip';
 import { ActionTooltip } from './ui/ActionTooltip';
 import ServiceDialog from './ServiceDialog';
@@ -22,11 +23,13 @@ interface ChatSession {
 
 interface ChatSidebarProps {
   currentChatId?: string;
-  onChatSelect: (chatId: string) => void;
-  onNewChat: () => void;
+  onChatSelect?: (chatId: string) => void;
+  onNewChat?: () => void;
 }
 
 export default function ChatSidebar({ currentChatId, onChatSelect, onNewChat }: ChatSidebarProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const { data: session, status } = useSession();
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [loading, setLoading] = useState(true);
@@ -85,7 +88,7 @@ export default function ChatSidebar({ currentChatId, onChatSelect, onNewChat }: 
       
       if (response.ok) {
         setChatSessions(prev => prev.filter(session => session.id !== chatId));
-        if (currentChatId === chatId) {
+        if (currentChatId === chatId && onNewChat) {
           onNewChat(); // 如果删除的是当前对话，创建新对话
         }
       }
@@ -119,14 +122,33 @@ export default function ChatSidebar({ currentChatId, onChatSelect, onNewChat }: 
   };
 
   const handleChatSelectAndCloseMobile = (chatId: string) => {
-    onChatSelect(chatId);
+    if (onChatSelect) {
+      onChatSelect(chatId);
+    }
     if (deviceType === 'mobile') {
       setMobileSidebarOpen(false);
     }
   };
 
   const handleNewChatAndCloseMobile = () => {
-    onNewChat();
+    if (onNewChat) {
+      onNewChat();
+    }
+    if (deviceType === 'mobile') {
+      setMobileSidebarOpen(false);
+    }
+  };
+
+  // 导航到不同页面的处理函数
+  const handleNavigateToChat = () => {
+    router.push('/chat');
+    if (deviceType === 'mobile') {
+      setMobileSidebarOpen(false);
+    }
+  };
+
+  const handleNavigateToFaq = () => {
+    router.push('/faq');
     if (deviceType === 'mobile') {
       setMobileSidebarOpen(false);
     }
@@ -165,6 +187,9 @@ export default function ChatSidebar({ currentChatId, onChatSelect, onNewChat }: 
             onClose={() => setMobileSidebarOpen(false)}
             toggleSidebar={toggleSidebar}
             onServiceClick={() => setShowServiceDialog(true)}
+            onNavigateToChat={handleNavigateToChat}
+            onNavigateToFaq={handleNavigateToFaq}
+            pathname={pathname}
           />
         </div>
         
@@ -193,12 +218,15 @@ export default function ChatSidebar({ currentChatId, onChatSelect, onNewChat }: 
           chatSessions={chatSessions}
           currentChatId={currentChatId}
           sidebarCollapsed={sidebarCollapsed}
-          onNewChat={onNewChat}
-          onChatSelect={onChatSelect}
+          onNewChat={onNewChat || (() => {})}
+          onChatSelect={onChatSelect || (() => {})}
           onDeleteChat={handleDeleteChat}
           formatTime={formatTime}
           toggleSidebar={toggleSidebar}
           onServiceClick={() => setShowServiceDialog(true)}
+          onNavigateToChat={handleNavigateToChat}
+          onNavigateToFaq={handleNavigateToFaq}
+          pathname={pathname}
         />
       </div>
       
@@ -227,6 +255,9 @@ interface SidebarContentProps {
   onClose?: () => void;
   toggleSidebar: () => void;
   onServiceClick?: () => void;
+  onNavigateToChat?: () => void;
+  onNavigateToFaq?: () => void;
+  pathname?: string;
 }
 
 function SidebarContent({
@@ -242,12 +273,55 @@ function SidebarContent({
   formatTime,
   showCloseButton = false,
   toggleSidebar,
-  onServiceClick
+  onServiceClick,
+  onNavigateToChat,
+  onNavigateToFaq,
+  pathname
 }: SidebarContentProps) {
   return (
     <TooltipProvider>
       {/* 头部 */}
       <div className={`p-4  bg-muted flex flex-col gap-2 ${sidebarCollapsed ? '' : 'border-b'}`}>
+        {/* 一级导航按钮 */}
+        {!sidebarCollapsed && (
+          <div className="space-y-1">
+            <ActionTooltip
+              label="AI 对话"
+              side="right"
+              align="center"
+              sideOffset={10}
+              enabled={false}
+            >
+              <Button
+                variant={pathname === '/chat' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={onNavigateToChat}
+                className="w-full justify-start"
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                AI 对话
+              </Button>
+            </ActionTooltip>
+            <ActionTooltip
+              label="FAQ 问答集"
+              side="right"
+              align="center"
+              sideOffset={10}
+              enabled={false}
+            >
+              <Button
+                variant={pathname?.startsWith('/faq') ? 'default' : 'ghost'}
+                size="sm"
+                onClick={onNavigateToFaq}
+                className="w-full justify-start"
+              >
+                <HelpCircle className="h-4 w-4 mr-2" />
+                FAQ 问答集
+              </Button>
+            </ActionTooltip>
+          </div>
+        )}
+
         {/* 桌面端侧边栏折叠/展开按钮 */}
         {!showCloseButton && (
           <ActionTooltip
@@ -276,82 +350,96 @@ function SidebarContent({
           </ActionTooltip>
         )}
         
-        <ActionTooltip
-          label="发起新对话"
-          side="right"
-          align="center"
-          sideOffset={10}
-          enabled={sidebarCollapsed}
-        >
-          <Button 
-            id="new-chat"
-            onClick={onNewChat}
-            className={!sidebarCollapsed ? "w-full hover:bg-background" : "h-10 w-10 p-0 hover:bg-background"}
-            variant="ghost"
+        {/* 发起新对话按钮 - 只在聊天页面显示 */}
+        {pathname === '/chat' && (
+          <ActionTooltip
+            label="发起新对话"
+            side="right"
+            align="center"
+            sideOffset={10}
+            enabled={sidebarCollapsed}
           >
-            {!sidebarCollapsed ? (
-              <>
-                <Plus className="h-4 w-4 mr-2" />
-                发起新对话
-              </>
-            ) : (
-              <Plus className="h-4 w-4" />
-            )}
-          </Button>
-        </ActionTooltip>
+            <Button 
+              id="new-chat"
+              onClick={onNewChat}
+              className={!sidebarCollapsed ? "w-full hover:bg-background" : "h-10 w-10 p-0 hover:bg-background"}
+              variant="ghost"
+            >
+              {!sidebarCollapsed ? (
+                <>
+                  <Plus className="h-4 w-4 mr-2" />
+                  发起新对话
+                </>
+              ) : (
+                <Plus className="h-4 w-4" />
+              )}
+            </Button>
+          </ActionTooltip>
+        )}
       </div>
 
-      {/* 历史对话列表 */}
+      {/* 历史对话列表 - 只在聊天页面显示 */}
       <ScrollArea className="flex-1 p-2 h-[calc(100vh-240px)]  bg-muted">
-        {loading || status === 'loading' ? (
-          <div className="text-center text-muted-foreground py-4">
-            {sidebarCollapsed ? null : '加载中...'}
-          </div>
-        ) : !session ? (
-          <div className="text-center text-muted-foreground py-4">
-            {sidebarCollapsed ? null : <p>请登录以查看历史对话</p>}
-          </div>
-        ) : chatSessions.length === 0 ? (
-          <div className="text-center text-muted-foreground py-4">
-            {sidebarCollapsed ? null : '暂无历史对话'}
-          </div>
-        ) : sidebarCollapsed ? (
-          // 侧边栏收起时不显示历史对话列表
-          null
-        ) : (
-          <div className="space-y-2">
-            {chatSessions.map((session) => (
-              <Card
-                key={session.id}
-                className={`
-                  bg-muted cursor-pointer hover:bg-background transition-all duration-200 group
-                  ${currentChatId === session.id ? 'bg-background border-primary/50' : ''}
-                  p-3
-                `}
-                onClick={() => onChatSelect(session.id)}
-              >
-                <div className="flex justify-between items-start">
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm truncate">
-                      {session.title}
+        {pathname === '/chat' ? (
+          loading || status === 'loading' ? (
+            <div className="text-center text-muted-foreground py-4">
+              {sidebarCollapsed ? null : '加载中...'}
+            </div>
+          ) : !session ? (
+            <div className="text-center text-muted-foreground py-4">
+              {sidebarCollapsed ? null : <p>请登录以查看历史对话</p>}
+            </div>
+          ) : chatSessions.length === 0 ? (
+            <div className="text-center text-muted-foreground py-4">
+              {sidebarCollapsed ? null : '暂无历史对话'}
+            </div>
+          ) : sidebarCollapsed ? (
+            // 侧边栏收起时不显示历史对话列表
+            null
+          ) : (
+            <div className="space-y-2">
+              {chatSessions.map((session) => (
+                <Card
+                  key={session.id}
+                  className={`
+                    bg-muted cursor-pointer hover:bg-background transition-all duration-200 group
+                    ${currentChatId === session.id ? 'bg-background border-primary/50' : ''}
+                    p-3
+                  `}
+                  onClick={() => onChatSelect(session.id)}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm truncate">
+                        {session.title}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {formatTime(session.updatedAt)} • {session.messageCount} 条消息
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {formatTime(session.updatedAt)} • {session.messageCount} 条消息
-                    </div>
+                    <ActionTooltip label="删除对话" side="top">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 h-6 w-6 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                        onClick={(e) => onDeleteChat(session.id, e)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </ActionTooltip>
                   </div>
-                  <ActionTooltip label="删除对话" side="top">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 h-6 w-6 p-0 hover:bg-destructive hover:text-destructive-foreground"
-                      onClick={(e) => onDeleteChat(session.id, e)}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </ActionTooltip>
-                </div>
-              </Card>
-            ))}
+                </Card>
+              ))}
+            </div>
+          )
+        ) : (
+          <div className="text-center text-muted-foreground py-8">
+            {sidebarCollapsed ? null : (
+              <div>
+                <p className="mb-2">切换到 AI 对话开始聊天</p>
+                <p className="text-xs">或浏览 FAQ 问答集获取帮助</p>
+              </div>
+            )}
           </div>
         )}
       </ScrollArea>

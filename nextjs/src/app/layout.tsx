@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Header from "@/components/Header";
 import SessionProvider from "@/components/SessionProvider";
-import { UIProvider } from "@/contexts/UIContext";
 
 export const metadata: Metadata = {
   title: "OWON 小欧AI 助手",
@@ -18,12 +16,7 @@ export default function RootLayout({
     <html lang="zh-CN">
       <body className="antialiased">
         <SessionProvider>
-          <UIProvider>
-            <Header />
-            <main className="pt-16">
-              {children}
-            </main>
-          </UIProvider>
+          {children}
         </SessionProvider>
       </body>
     </html>

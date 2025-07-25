@@ -2,7 +2,7 @@
 {
   "mcpServers": {    
     "playwright": {
-        "command": "cmd0",
+        "command": "cmd",
         "args": [
           "/c",
           "npx",

@@ -11,6 +11,7 @@ export default function FaqQuestionList() {
   const router = useRouter();
 
   const handleQuestionClick = (questionId: string) => {
+    // 使用原始ID，因为数据库中的ID已经是正确的格式
     router.push(`/faq/${questionId}`);
   };
 

@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import type { FaqQuestion } from '@/types/faq';
+import type { FaqQuestion, FaqDetailResponse } from '@/types/faq';
 
 export default function FaqDetailPage() {
   const params = useParams();
@@ -24,8 +24,8 @@ export default function FaqDetailPage() {
           throw new Error('问题不存在');
         }
         
-        const data = await response.json();
-        setQuestion(data);
+        const data = await response.json() as FaqDetailResponse;
+        setQuestion(data.question);
       } catch (err) {
         setError(err instanceof Error ? err.message : '加载失败');
       } finally {
@@ -89,20 +89,20 @@ export default function FaqDetailPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-xl">
-            {question.question}
+            {question.title}
           </CardTitle>
           <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-            <span>分类: {question.category_name}</span>
-            {question.model_name && <span>机型: {question.model_name}</span>}
+            <span>分类: {question.category?.name}</span>
+            {question.product_model && <span>机型: {question.product_model.name}</span>}
             {question.tags && question.tags.length > 0 && (
-              <span>标签: {question.tags.join(', ')}</span>
+              <span>标签: {question.tags.map(tag => tag.name).join(', ')}</span>
             )}
           </div>
         </CardHeader>
         <CardContent>
           <div 
             className="prose prose-sm max-w-none"
-            dangerouslySetInnerHTML={{ __html: question.answer }}
+            dangerouslySetInnerHTML={{ __html: question.content }}
           />
         </CardContent>
       </Card>

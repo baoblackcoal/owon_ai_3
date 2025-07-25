@@ -8,12 +8,15 @@ export async function GET(
 ) {
   try {
     const { env } = await getCloudflareContext();
-    const { id } = params;
+    // 移除所有q_前缀，只保留数字部分
+    const questionId = params.id;
+    console.log('Fetching FAQ question:', questionId);
 
     // 通过类型断言解决 linter 对 env.DB 的类型提示
     const db = (env as unknown as { DB?: D1Database }).DB;
 
     if (!db) {
+      console.log('D1 database not bound');
       return NextResponse.json(
         { error: 'D1 数据库未绑定，请使用 `npm run preview` 或部署到 Cloudflare 后再访问此接口' },
         { status: 500 }
@@ -42,9 +45,12 @@ export async function GET(
       WHERE q.id = ?
     `;
 
-    const questionResult = await db.prepare(questionQuery).bind(id).first();
+    console.log('Executing question query with ID:', questionId);
+    const questionResult = await db.prepare(questionQuery).bind(questionId).first();
+    console.log('Question result:', questionResult);
 
     if (!questionResult) {
+      console.log('Question not found');
       return NextResponse.json(
         { error: '问题未找到' },
         { status: 404 }
@@ -62,7 +68,7 @@ export async function GET(
       ORDER BY t.name ASC
     `;
 
-    const tagsResult = await db.prepare(tagsQuery).bind(id).all();
+    const tagsResult = await db.prepare(tagsQuery).bind(questionId).all();
     const tags = tagsResult.results as any[];
 
     // 获取问题的答案
@@ -81,7 +87,7 @@ export async function GET(
       ORDER BY a.created_at ASC
     `;
 
-    const answersResult = await db.prepare(answersQuery).bind(id).all();
+    const answersResult = await db.prepare(answersQuery).bind(questionId).all();
     const answers = answersResult.results as any[];
 
     // 组装返回数据
@@ -122,9 +128,13 @@ export async function GET(
       UPDATE faq_questions 
       SET views_count = views_count + 1 
       WHERE id = ?
-    `).bind(id).run();
+    `).bind(questionId).run();
 
-    return NextResponse.json(question);
+    return NextResponse.json({
+      question,
+      answers: question.answers,
+      related_questions: [] // 暂时不返回相关问题
+    });
 
   } catch (error) {
     console.error('[FAQ Detail API Error]:', error);

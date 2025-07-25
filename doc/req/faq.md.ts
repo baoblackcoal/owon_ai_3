@@ -80,21 +80,21 @@
 - **问答管理**: 管理员可以为问题添加或移除标签、分类和机型，以保证知识库的整洁和准确。
 
 ## 4. 数据库设计要点
-- **`questions` 表**:
+- **`faq_questions` 表**:
   - `id`, `title`, `content`, `created_at`
   - `category_id` (ForeignKey to `categories`)
   - `product_model_id` (ForeignKey to `product_models`)
   - `views_count` (Integer, default 0)
   - `likes_count` (Integer, default 0, denormalized for performance)
-- **`categories` 表**:
+- **`faq_categories` 表**:
   - `id`, `name`, `description`
-- **`product_models` 表**:
+- **`faq_product_models` 表**:
   - `id`, `name`, `category_id` (ForeignKey to `categories`)
-- **`tags` 表**:
+- **`faq_tags` 表**:
   - `id`, `name`
-- **`question_tags` (中间表)**:
+- **`faq_question_tags` (中间表)**:
   - `question_id`, `tag_id`
-- **`likes` 表**:
+- **`faq_likes` 表**:
   - `id`, `question_id` (或 `answer_id`), `user_id`, `created_at`
 
 ## 4.1. 命名调整与新增字段（faq 前缀）

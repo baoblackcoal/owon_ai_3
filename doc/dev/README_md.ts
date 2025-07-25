@@ -11,7 +11,7 @@ npx wrangler d1 execute DB --file ./src/sql/0003_add_feedback_to_messages.sql --
 // 删除ChatMessage和Chat表，并重新创建
 cd nextjs ; npx  wrangler d1 execute DB --command "DROP TABLE IF EXISTS ChatMessage; DROP TABLE IF EXISTS Chat;" ; npx wrangler d1 execute DB --file ./src/sql/0001_create_messages_table.sql ; npx  wrangler d1 execute DB --file ./src/sql/0002_create_chat_sessions_table.sql
 
-// 测试数据库
+// 测试数据库 
 npx wrangler d1 execute test_d1 --local --file=./src/app/test/d1/schema.sql
 npx wrangler d1 execute test_d1 --local --command="SELECT * FROM Customers"
 

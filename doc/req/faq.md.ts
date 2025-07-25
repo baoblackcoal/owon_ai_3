@@ -88,10 +88,9 @@
 | `faq_categories` | 产品大类，如“示波器” |
 | `faq_product_models` | 具体系列 / 机型，与 `faq_categories` 关联 |
 | `faq_tags` | 标签维度 |
-| `faq_questions` | 问题主体 |
-| `faq_answers` | 答案，一问多答 |
+| `faq_questions` | 问题 + 答案（Markdown），一问一答 |
 | `faq_question_tags` | 问题-标签多对多关联表 |
-| `faq_likes` | 点赞记录（问题或答案） |
+| `faq_likes` | 点赞记录（问题） |
 
 字段设计（*PK / FK* 已在括号中注明）：
 
@@ -103,24 +102,22 @@
   - `id` *PK*, `name` TEXT NOT NULL UNIQUE, `created_at` TEXT  
 - **faq_questions**  
   - `id` *PK*, `title` TEXT NOT NULL, `content` TEXT NOT NULL,  
+  - `answer` TEXT NOT NULL,  -- Markdown 格式官方答案  
   - `category_id` *FK* NULL, `product_model_id` *FK* NULL, `software_version` TEXT NULL,  
   - `views_count` INTEGER NOT NULL DEFAULT 0, `likes_count` INTEGER NOT NULL DEFAULT 0,  
   - `created_by` *FK → User.id* NULL, `created_at` TEXT, `updated_at` TEXT  
-- **faq_answers**  
-  - `id` *PK*, `question_id` *FK → faq_questions.id* NOT NULL,  
-  - `content` TEXT NOT NULL, `software_version` TEXT NULL, `product_model_id` *FK* NULL,  
-  - `likes_count` INTEGER NOT NULL DEFAULT 0, `created_by` *FK → User.id* NULL, `created_at` TEXT  
 - **faq_question_tags**  
   - `question_id` *FK*, `tag_id` *FK*, PRIMARY KEY (`question_id`, `tag_id`)  
 - **faq_likes**  
   - `id` *PK*, `user_id` *FK → User.id* NOT NULL,  
-  - `question_id` *FK* NULL, `answer_id` *FK* NULL,  
+  - `question_id` *FK* NOT NULL,  
   - `created_at` TEXT,  
-  - UNIQUE (`user_id`, `question_id`), UNIQUE (`user_id`, `answer_id`)  
+  - UNIQUE (`user_id`, `question_id`)  
 
 > 说明：  
-> 1. `faq_likes` 允许对问题或答案点赞。二者必填其一，应用层保证互斥。  
-> 2. `likes_count`、`views_count` 为冗余字段，用于快速排序；由触发器或应用层维护同步。  
+> 1. FAQ 现采用“一问一答”模型，官方答案直接存储在 `faq_questions.answer` 字段中（Markdown）。  
+> 2. `faq_likes` 仅针对问题本身进行点赞。  
+> 3. `likes_count`、`views_count` 为冗余字段，用于快速排序；由触发器或应用层维护同步。  
 > 3. 所有外键统一 `ON DELETE SET NULL / CASCADE`，避免级联删除导致数据丢失。
 
 ## 5.1. API 路由命名调整（改为 /api/faq/*）

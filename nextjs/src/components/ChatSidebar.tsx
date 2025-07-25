@@ -352,10 +352,10 @@ function SidebarContent({
               enabled={false}
             >
               <Button
-                variant={pathname?.startsWith('/faq') ? 'default' : 'ghost'}
+                variant={pathname?.startsWith('/faq') ? 'outline' : 'ghost'}
                 size="sm"
                 onClick={onNavigateToFaq}
-                className="w-full"
+                className="w-full  hover:bg-background"
               >
                 <HelpCircle className="h-4 w-4 mr-2" />
                 FAQ 问答集
@@ -375,16 +375,13 @@ function SidebarContent({
           ) : !session ? (
             <div className="text-center text-muted-foreground py-4">
               {sidebarCollapsed ? null : <p>请登录以查看历史对话</p>}
-            </div>
-          ) : chatSessions.length === 0 ? (
-            <div className="text-center text-muted-foreground py-4">
-              {sidebarCollapsed ? null : '暂无历史对话'}
-            </div>
+            </div>         
           ) : sidebarCollapsed ? (
             // 侧边栏收起时不显示历史对话列表
             null
           ) : (
             <div className="space-y-2">
+              <div className="text-xs text-muted-foreground px-1">历史对话</div>
               {chatSessions.map((session) => (
                 <Card
                   key={session.id}

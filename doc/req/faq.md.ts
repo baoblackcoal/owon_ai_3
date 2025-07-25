@@ -79,41 +79,49 @@
 - **标签管理**: 增、删、改、查标签，查看各标签下的问题数量。
 - **问答管理**: 管理员可以为问题添加或移除标签、分类和机型，以保证知识库的整洁和准确。
 
-## 4. 数据库设计要点
-- **`faq_questions` 表**:
-  - `id`, `title`, `content`, `created_at`
-  - `category_id` (ForeignKey to `categories`)
-  - `product_model_id` (ForeignKey to `product_models`)
-  - `views_count` (Integer, default 0)
-  - `likes_count` (Integer, default 0, denormalized for performance)
-- **`faq_categories` 表**:
-  - `id`, `name`, `description`
-- **`faq_product_models` 表**:
-  - `id`, `name`, `category_id` (ForeignKey to `categories`)
-- **`faq_tags` 表**:
-  - `id`, `name`
-- **`faq_question_tags` (中间表)**:
-  - `question_id`, `tag_id`
-- **`faq_likes` 表**:
-  - `id`, `question_id` (或 `answer_id`), `user_id`, `created_at`
+## 4. 数据库设计
 
-## 4.1. 命名调整与新增字段（faq 前缀）
+为了兼容现有 Cloudflare D1（SQLite） 数据库及现有 `User`、`support_tickets` 等表的命名风格，FAQ 相关数据表全部采用下划线命名并统一加 `faq_` 前缀。所有主键均使用 `TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16))))` 生成 32 位 UUID，时间字段使用 `created_at` / `updated_at`，默认值为 `strftime('%Y-%m-%d %H:%M:%S', 'now', 'localtime')`。
 
-- 所有表均统一增加 `faq_` 前缀，以与其他业务表区分。
-- **`faq_questions` 表**  
-  - 原 `questions` 表重命名。  
-  - 新增：`software_version` (Text, Nullable) —— 适用于固件或 PC 软件版本说明。  
-  - (保留) `product_model_id`，可为空。
-- **`faq_answers` 表**（新建，支持后续一问多答）  
-  - `id`, `question_id` (ForeignKey → `faq_questions`), `content`,  
-  - `software_version` (Text, Nullable), `product_model_id` (ForeignKey → `faq_product_models`, Nullable),  
-  - `created_at`, `likes_count` (Integer, default 0)  
-- 其余关联表同步改名：  
-  - `categories` → `faq_categories`  
-  - `product_models` → `faq_product_models`  
-  - `tags` → `faq_tags`  
-  - `question_tags` → `faq_question_tags`  
-  - `likes` → `faq_likes`  
+| 表名 | 说明 |
+| ---- | ---- |
+| `faq_categories` | 产品大类，如“示波器” |
+| `faq_product_models` | 具体系列 / 机型，与 `faq_categories` 关联 |
+| `faq_tags` | 标签维度 |
+| `faq_questions` | 问题主体 |
+| `faq_answers` | 答案，一问多答 |
+| `faq_question_tags` | 问题-标签多对多关联表 |
+| `faq_likes` | 点赞记录（问题或答案） |
+
+字段设计（*PK / FK* 已在括号中注明）：
+
+- **faq_categories**  
+  - `id` *PK*, `name` TEXT NOT NULL UNIQUE, `description` TEXT NULL, `created_at` TEXT  
+- **faq_product_models**  
+  - `id` *PK*, `category_id` *FK → faq_categories.id* NULL, `name` TEXT NOT NULL, `created_at` TEXT  
+- **faq_tags**  
+  - `id` *PK*, `name` TEXT NOT NULL UNIQUE, `created_at` TEXT  
+- **faq_questions**  
+  - `id` *PK*, `title` TEXT NOT NULL, `content` TEXT NOT NULL,  
+  - `category_id` *FK* NULL, `product_model_id` *FK* NULL, `software_version` TEXT NULL,  
+  - `views_count` INTEGER NOT NULL DEFAULT 0, `likes_count` INTEGER NOT NULL DEFAULT 0,  
+  - `created_by` *FK → User.id* NULL, `created_at` TEXT, `updated_at` TEXT  
+- **faq_answers**  
+  - `id` *PK*, `question_id` *FK → faq_questions.id* NOT NULL,  
+  - `content` TEXT NOT NULL, `software_version` TEXT NULL, `product_model_id` *FK* NULL,  
+  - `likes_count` INTEGER NOT NULL DEFAULT 0, `created_by` *FK → User.id* NULL, `created_at` TEXT  
+- **faq_question_tags**  
+  - `question_id` *FK*, `tag_id` *FK*, PRIMARY KEY (`question_id`, `tag_id`)  
+- **faq_likes**  
+  - `id` *PK*, `user_id` *FK → User.id* NOT NULL,  
+  - `question_id` *FK* NULL, `answer_id` *FK* NULL,  
+  - `created_at` TEXT,  
+  - UNIQUE (`user_id`, `question_id`), UNIQUE (`user_id`, `answer_id`)  
+
+> 说明：  
+> 1. `faq_likes` 允许对问题或答案点赞。二者必填其一，应用层保证互斥。  
+> 2. `likes_count`、`views_count` 为冗余字段，用于快速排序；由触发器或应用层维护同步。  
+> 3. 所有外键统一 `ON DELETE SET NULL / CASCADE`，避免级联删除导致数据丢失。
 
 ## 5.1. API 路由命名调整（改为 /api/faq/*）
 

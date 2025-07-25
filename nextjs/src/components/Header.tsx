@@ -63,29 +63,7 @@ export default function Header() {
           {/* <h1 className="text-xl font-semibold text-primary">OWON AI 助手</h1> */}
         </div>
         
-        {/* 导航菜单 */}
-        {deviceType !== 'mobile' && (
-          <nav className="flex items-center space-x-1">
-            <Button
-              variant={pathname === '/chat' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => router.push('/chat')}
-              className="flex items-center gap-2"
-            >
-              <MessageSquare className="h-4 w-4" />
-              AI 对话
-            </Button>
-            <Button
-              variant={pathname.startsWith('/faq') ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => router.push('/faq')}
-              className="flex items-center gap-2"
-            >
-              <HelpCircle className="h-4 w-4" />
-              FAQ 问答集
-            </Button>
-          </nav>
-        )}
+        
       </div>
 
       <div className="flex items-center space-x-2">

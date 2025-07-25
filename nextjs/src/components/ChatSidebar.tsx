@@ -282,46 +282,6 @@ function SidebarContent({
     <TooltipProvider>
       {/* 头部 */}
       <div className={`p-4  bg-muted flex flex-col gap-2 ${sidebarCollapsed ? '' : 'border-b'}`}>
-        {/* 一级导航按钮 */}
-        {!sidebarCollapsed && (
-          <div className="space-y-1">
-            <ActionTooltip
-              label="AI 对话"
-              side="right"
-              align="center"
-              sideOffset={10}
-              enabled={false}
-            >
-              <Button
-                variant={pathname === '/chat' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={onNavigateToChat}
-                className="w-full justify-start"
-              >
-                <MessageSquare className="h-4 w-4 mr-2" />
-                AI 对话
-              </Button>
-            </ActionTooltip>
-            <ActionTooltip
-              label="FAQ 问答集"
-              side="right"
-              align="center"
-              sideOffset={10}
-              enabled={false}
-            >
-              <Button
-                variant={pathname?.startsWith('/faq') ? 'default' : 'ghost'}
-                size="sm"
-                onClick={onNavigateToFaq}
-                className="w-full justify-start"
-              >
-                <HelpCircle className="h-4 w-4 mr-2" />
-                FAQ 问答集
-              </Button>
-            </ActionTooltip>
-          </div>
-        )}
-
         {/* 桌面端侧边栏折叠/展开按钮 */}
         {!showCloseButton && (
           <ActionTooltip
@@ -349,33 +309,60 @@ function SidebarContent({
             </Button>
           </ActionTooltip>
         )}
-        
-        {/* 发起新对话按钮 - 只在聊天页面显示 */}
-        {pathname === '/chat' && (
-          <ActionTooltip
-            label="发起新对话"
-            side="right"
-            align="center"
-            sideOffset={10}
-            enabled={sidebarCollapsed}
+
+        {/* 发起新对话按钮 - 只在聊天页面显示 */}        
+        <ActionTooltip
+          label="发起新对话"
+          side="right"
+          align="center"
+          sideOffset={10}
+          enabled={sidebarCollapsed}
+        >
+          <Button 
+            id="new-chat"
+            onClick={() => {
+              if (pathname !== '/chat') {
+                onNavigateToChat?.();
+              }
+              onNewChat();
+            }}
+            className={!sidebarCollapsed ? "w-full hover:bg-background" : "h-10 w-10 p-0 hover:bg-background"}
+            variant="ghost"
           >
-            <Button 
-              id="new-chat"
-              onClick={onNewChat}
-              className={!sidebarCollapsed ? "w-full hover:bg-background" : "h-10 w-10 p-0 hover:bg-background"}
-              variant="ghost"
+            {!sidebarCollapsed ? (
+              <>
+                <Plus className="h-4 w-4 mr-2" />
+                发起新对话
+              </>
+            ) : (
+              <Plus className="h-4 w-4" />
+            )}
+          </Button>
+        </ActionTooltip> 
+
+        {/* 一级导航按钮 */}
+        {!sidebarCollapsed && (
+          <div className="space-y-1">
+            
+            <ActionTooltip
+              label="FAQ 问答集"
+              side="right"
+              align="center"
+              sideOffset={10}
+              enabled={false}
             >
-              {!sidebarCollapsed ? (
-                <>
-                  <Plus className="h-4 w-4 mr-2" />
-                  发起新对话
-                </>
-              ) : (
-                <Plus className="h-4 w-4" />
-              )}
-            </Button>
-          </ActionTooltip>
-        )}
+              <Button
+                variant={pathname?.startsWith('/faq') ? 'default' : 'ghost'}
+                size="sm"
+                onClick={onNavigateToFaq}
+                className="w-full"
+              >
+                <HelpCircle className="h-4 w-4 mr-2" />
+                FAQ 问答集
+              </Button>
+            </ActionTooltip>
+          </div>
+        )}              
       </div>
 
       {/* 历史对话列表 - 只在聊天页面显示 */}
@@ -434,12 +421,12 @@ function SidebarContent({
           )
         ) : (
           <div className="text-center text-muted-foreground py-8">
-            {sidebarCollapsed ? null : (
+            {/* {sidebarCollapsed ? null : (
               <div>
                 <p className="mb-2">切换到 AI 对话开始聊天</p>
                 <p className="text-xs">或浏览 FAQ 问答集获取帮助</p>
               </div>
-            )}
+            )} */}
           </div>
         )}
       </ScrollArea>

@@ -1,22 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Header from "@/components/Header";
 import SessionProvider from "@/components/SessionProvider";
-import { Toaster } from "sonner";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import { UIProvider } from "@/contexts/UIContext";
 
 export const metadata: Metadata = {
   title: "OWON 小欧AI 助手",
-  description: "OWON 小欧AI 助手",
+  description: "专业的测试仪器智能助手，提供测试仪器相关的技术支持和解答",
 };
 
 export default function RootLayout({
@@ -26,12 +16,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className="antialiased">
         <SessionProvider>
-          {children}
-          <Toaster />
+          <UIProvider>
+            <Header />
+            <main className="pt-16">
+              {children}
+            </main>
+          </UIProvider>
         </SessionProvider>
       </body>
     </html>

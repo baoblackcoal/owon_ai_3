@@ -2,6 +2,9 @@
 
 ```
 // ------- 本地 -------
+// 查看所有表
+npx wrangler d1 execute DB --command "SELECT name FROM sqlite_master WHERE type='table';"
+
 // 增加0003_add_feedback_to_messages.sql
 npx wrangler d1 execute DB --file ./src/sql/0003_add_feedback_to_messages.sql --local
 

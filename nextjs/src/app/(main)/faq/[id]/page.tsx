@@ -77,7 +77,7 @@ export default function FaqDetailPage() {
         ${deviceType === 'mobile' ? 'w-full' : ''}
         px-4
       `}>
-        <BackButton>返回问答集</BackButton>
+        <BackButton>返回</BackButton>
         <Card>
           <CardContent className="pt-6">
             <div className="text-center text-muted-foreground">
@@ -132,7 +132,7 @@ export default function FaqDetailPage() {
       ${deviceType === 'mobile' ? 'w-full' : ''}
       px-4 space-y-4
     `}>
-      <BackButton>返回问答集</BackButton>
+      <BackButton>返回</BackButton>
 
       <Card>
         <CardHeader>

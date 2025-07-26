@@ -1,9 +1,9 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
-import { FaqProvider } from '@/contexts/FaqContext';
+import { FaqProvider, useFaq } from '@/contexts/FaqContext';
 import { initFiltersFromParams } from '@/lib/faq-utils';
 import FaqHeader from '@/components/faq/FaqHeader';
 import FaqSearch from '@/components/faq/FaqSearch';
@@ -15,6 +15,14 @@ import { useUI } from '@/contexts/UIContext';
 function FaqPageContent() {
   const [showSearch, setShowSearch] = useState(false);
   const { deviceType } = useUI();
+  const { loading, restoreScrollPosition } = useFaq();
+
+  // 当数据加载完成后恢复滚动位置
+  useEffect(() => {
+    if (!loading) {
+      restoreScrollPosition();
+    }
+  }, [loading, restoreScrollPosition]);
 
   return (
     <div className={`

@@ -21,6 +21,9 @@ interface FaqContextValue {
   updateFilter: (key: keyof FaqFilters, value: any) => void;
   clearAllFilters: () => void;
   refreshQuestions: () => Promise<void>;
+  // 滚动位置管理
+  saveScrollPosition: () => void;
+  restoreScrollPosition: () => void;
 }
 
 const FaqContext = createContext<FaqContextValue | undefined>(undefined);
@@ -91,6 +94,32 @@ export function FaqProvider({ children, initialFilters }: FaqProviderProps) {
     setFilters(createDefaultFilters());
   };
 
+  // 保存滚动位置
+  const saveScrollPosition = () => {
+    const scrollY = window.scrollY;
+    sessionStorage.setItem('faq-scroll-position', scrollY.toString());
+  };
+
+  // 恢复滚动位置
+  const restoreScrollPosition = () => {
+    const savedPosition = sessionStorage.getItem('faq-scroll-position');
+    if (savedPosition) {
+      // 延迟恢复，确保DOM完全渲染
+      setTimeout(() => {
+        window.scrollTo(0, parseInt(savedPosition, 10));
+      }, 100);
+    }
+  };
+
+  // 当筛选条件或数据加载完成时，保存当前状态
+  useEffect(() => {
+    if (!loading) {
+      // 更新保存的筛选条件
+      const currentFilters = { ...filters, search: debouncedSearch };
+      sessionStorage.setItem('faq-filters', JSON.stringify(currentFilters));
+    }
+  }, [filters, debouncedSearch, loading]);
+
   const value: FaqContextValue = {
     questions,
     loading,
@@ -100,6 +129,8 @@ export function FaqProvider({ children, initialFilters }: FaqProviderProps) {
     updateFilter,
     clearAllFilters,
     refreshQuestions,
+    saveScrollPosition,
+    restoreScrollPosition,
   };
 
   return (

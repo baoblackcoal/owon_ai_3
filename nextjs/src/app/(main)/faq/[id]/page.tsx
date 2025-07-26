@@ -58,6 +58,34 @@ export default function FaqDetailPage() {
     }
   }, [params.id]);
 
+  // 优化的返回函数，确保始终返回FAQ列表页
+  const handleBackToFaq = () => {
+    // 尝试从sessionStorage获取之前的筛选参数
+    const savedFilters = sessionStorage.getItem('faq-filters');
+    let queryParams = '';
+    
+    if (savedFilters) {
+      try {
+        const filters = JSON.parse(savedFilters);
+        const params = new URLSearchParams();
+        
+        if (filters.search) params.set('q', filters.search);
+        if (filters.categoryId) params.set('category_id', filters.categoryId);
+        if (filters.productModelId) params.set('product_model_id', filters.productModelId);
+        if (filters.tagId) params.set('tag_id', filters.tagId);
+        if (filters.sortBy && filters.sortBy !== 'latest') params.set('sort', filters.sortBy);
+        if (filters.period && filters.period !== 'all') params.set('period', filters.period);
+        
+        queryParams = params.toString();
+      } catch (err) {
+        console.warn('Failed to parse saved filters:', err);
+      }
+    }
+    
+    const faqUrl = queryParams ? `/faq?${queryParams}` : '/faq';
+    router.push(faqUrl);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -77,14 +105,21 @@ export default function FaqDetailPage() {
         ${deviceType === 'mobile' ? 'w-full' : ''}
         px-4
       `}>
-        <div className="mb-4">
+        {/* 固定顶部导航 */}
+        <div className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 py-2 mb-4">
           <Button 
-            variant="ghost" 
-            onClick={() => router.back()}
-            className="flex items-center space-x-2"
+            variant="outline"
+            onClick={handleBackToFaq}
+            className={`
+              flex items-center space-x-2 font-medium
+              ${deviceType === 'mobile' ? 'h-11 px-4 text-base' : 'h-9 px-3'}
+              hover:bg-accent hover:text-accent-foreground
+              border-border/50
+            `}
+            aria-label="返回问答集列表"
           >
-            <ArrowLeft className="h-4 w-4" />
-            <span>返回</span>
+            <ArrowLeft className={deviceType === 'mobile' ? 'h-5 w-5' : 'h-4 w-4'} />
+            <span>返回问答集</span>
           </Button>
         </div>
         <Card>
@@ -141,13 +176,20 @@ export default function FaqDetailPage() {
       ${deviceType === 'mobile' ? 'w-full' : ''}
       px-4 space-y-4
     `}>
-      <div className="mb-4">
+      {/* 固定顶部导航 - 改进后的返回按钮 */}
+      <div className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 py-2 mb-4">
         <Button 
-          variant="ghost" 
-          onClick={() => router.back()}
-          className="flex items-center space-x-2"
+          variant="outline"
+          onClick={handleBackToFaq}
+          className={`
+            flex items-center space-x-2 font-medium
+            ${deviceType === 'mobile' ? 'h-11 px-4 text-base' : 'h-9 px-3'}
+            hover:bg-accent hover:text-accent-foreground
+            border-border/50
+          `}
+          aria-label="返回问答集列表"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className={deviceType === 'mobile' ? 'h-5 w-5' : 'h-4 w-4'} />
           <span>返回问答集</span>
         </Button>
       </div>

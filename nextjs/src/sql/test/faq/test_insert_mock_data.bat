@@ -14,11 +14,11 @@ if /i not "%CONFIRM%"=="y" (
 )
 
 echo 1. Inserting FAQ categories...
-call npx wrangler d1 execute DB --local --file "./src/sql/test/0000_insert_faq_categories.sql"
+call npx wrangler d1 execute DB --local --file "%SCRIPT_DIR%0000_insert_faq_categories.sql"
 if %ERRORLEVEL% neq 0 goto :error
 
 echo 2. Inserting FAQ test data...
-call npx wrangler d1 execute DB --local --file "./src/sql/test/0001_test_insert_faq_test_data.sql"
+call npx wrangler d1 execute DB --local --file "%SCRIPT_DIR%0001_test_insert_faq_test_data.sql"
 if %ERRORLEVEL% neq 0 goto :error
 
 echo.

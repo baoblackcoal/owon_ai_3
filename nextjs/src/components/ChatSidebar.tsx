@@ -345,7 +345,7 @@ function SidebarContent({
           <div className="space-y-1">
             
             <ActionTooltip
-              label="FAQ 问答集"
+              label="视频和问答集"
               side="right"
               align="center"
               sideOffset={10}
@@ -358,7 +358,7 @@ function SidebarContent({
                 className="w-full  hover:bg-background"
               >
                 <HelpCircle className="h-4 w-4 mr-2" />
-                FAQ 问答集
+                视频和问答集
               </Button>
             </ActionTooltip>
           </div>

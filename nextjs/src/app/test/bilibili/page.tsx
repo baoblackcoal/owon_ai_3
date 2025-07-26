@@ -61,7 +61,7 @@ const BilibiliVideo = ({ title, videoUrl, isVisible }: VideoProps) => {
 const allVideos = Array.from({ length: 20 }, (_, index) => ({
   id: index + 1,
   title: `视频示例 ${index + 1}`,
-  videoUrl: `//player.bilibili.com/player.html?isOutside=true&aid=${114905323670404 }&bvid=BV1nL8NzkEyx&cid=${31239767768}&p=1&autoplay=0`
+  videoUrl: `//player.bilibili.com/player.html?isOutside=true&bvid=BV1nL8NzkEyx&autoplay=0`
 }));
 
 export default function BilibiliTestPage() {

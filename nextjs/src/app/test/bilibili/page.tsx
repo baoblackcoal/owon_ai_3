@@ -1,36 +1,76 @@
 'use client';
 
 import { Card } from "@/components/ui/card";
+import { useState } from "react";
 
-export default function BilibiliTestPage() {
+interface VideoProps {
+  title: string;
+  videoUrl: string;
+}
+
+const BilibiliVideo = ({ title, videoUrl }: VideoProps) => {
+  const [isLoading, setIsLoading] = useState(true);
+
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">B站视频嵌入测试</h1>
-      
-      <Card className="p-4">
-        <h2 className="text-xl font-semibold mb-2">视频示例</h2>
+    <Card className="h-full">
+      <div className="p-4">
+        <h2 className="text-lg font-semibold mb-2 line-clamp-1">{title}</h2>
         <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
           <iframe 
-            className="absolute top-0 left-0 w-full h-full"
-            src="//player.bilibili.com/player.html?isOutside=true&aid=114905323670404&bvid=BV1nL8NzkEyx&cid=31239767768&p=1" 
+            className={`absolute top-0 left-0 w-full h-full transition-opacity duration-300 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
+            src={videoUrl}
             scrolling="no" 
-            border="0" 
             frameBorder="no" 
-            framespacing="0" 
             allowFullScreen={true}
+            onLoad={() => setIsLoading(false)}
           />
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100"></div>
+            </div>
+          )}
         </div>
+      </div>
+    </Card>
+  );
+};
+
+export default function BilibiliTestPage() {
+  // 创建10个视频数据
+  const videos = Array.from({ length: 10 }, (_, index) => ({
+    id: index + 1,
+    title: `视频示例 ${index + 1}`,
+    videoUrl: "//player.bilibili.com/player.html?isOutside=true&aid=114905323670404&bvid=BV1nL8NzkEyx&cid=31239767768&p=1"
+  }));
+
+  return (
+    <div className="container mx-auto px-4 py-6">
+      <div className="flex flex-col space-y-4">
+        <h1 className="text-2xl font-bold">B站视频嵌入测试</h1>
         
-        <div className="mt-4">
-          <h3 className="text-lg font-medium mb-2">使用说明：</h3>
-          <ul className="list-disc list-inside space-y-2">
-            <li>视频使用响应式布局，会自适应容器宽度</li>
+        {/* 使用说明卡片 */}
+        <Card className="p-4 mb-6">
+          <h3 className="text-lg font-medium mb-2">使用说明</h3>
+          <ul className="list-disc list-inside space-y-2 text-sm text-gray-600 dark:text-gray-300">
+            <li>支持响应式布局，自动适应不同屏幕尺寸</li>
             <li>视频默认使用16:9的宽高比</li>
             <li>支持全屏播放功能</li>
-            <li>可以通过修改aid、bvid、cid参数来更换视频</li>
+            <li>针对移动端优化了布局和加载体验</li>
+            <li>支持深色模式</li>
           </ul>
+        </Card>
+
+        {/* 视频网格 */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-fr">
+          {videos.map((video) => (
+            <BilibiliVideo
+              key={video.id}
+              title={video.title}
+              videoUrl={video.videoUrl}
+            />
+          ))}
         </div>
-      </Card>
+      </div>
     </div>
   );
 } 

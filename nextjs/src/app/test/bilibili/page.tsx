@@ -40,7 +40,7 @@ export default function BilibiliTestPage() {
   const videos = Array.from({ length: 10 }, (_, index) => ({
     id: index + 1,
     title: `视频示例 ${index + 1}`,
-    videoUrl: "//player.bilibili.com/player.html?isOutside=true&aid=114905323670404&bvid=BV1nL8NzkEyx&cid=31239767768&p=1"
+    videoUrl: "//player.bilibili.com/player.html?isOutside=true&aid=114905323670404&bvid=BV1nL8NzkEyx&cid=31239767768&p=1&autoplay=0"
   }));
 
   return (
@@ -61,7 +61,7 @@ export default function BilibiliTestPage() {
         </Card>
 
         {/* 视频网格 */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-fr">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-4 auto-rows-fr">
           {videos.map((video) => (
             <BilibiliVideo
               key={video.id}

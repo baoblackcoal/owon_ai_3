@@ -50,7 +50,7 @@ export default function FaqFilters() {
   const activeFilters = hasActiveFilters(filters);
 
   return (
-    <div className="bg-muted/30 rounded-lg p-4 space-y-3">
+    <div className="bg-muted/30 rounded-lg p-2 space-y-3">
       {/* <div className="flex items-center justify-between">
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">筛选条件</h3>
         <div className="text-xs text-muted-foreground">
@@ -271,7 +271,7 @@ export default function FaqFilters() {
                 <TabsTrigger value="latest" className="text-xs px-2">最新</TabsTrigger>
                 <TabsTrigger value="best" className="text-xs px-2">最佳</TabsTrigger>
                 <TabsTrigger value="ranking" className="text-xs px-2">排行</TabsTrigger>
-                <TabsTrigger value="my-share" className="text-xs px-2">我的分享</TabsTrigger>
+                {/* <TabsTrigger value="my-share" className="text-xs px-2">我的分享</TabsTrigger> */}
               </TabsList>
             </Tabs>
             {activeFilters && (

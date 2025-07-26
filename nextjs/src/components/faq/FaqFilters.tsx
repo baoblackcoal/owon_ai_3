@@ -27,7 +27,9 @@ import { hasActiveFilters } from '@/lib/faq-utils';
 
 export default function FaqFilters() {
   const { filters, filterData, questions, updateFilter, clearAllFilters } = useFaq();
-  const [tagSearchOpen, setTagSearchOpen] = useState(false);
+  // 移动端和桌面端各自维护 Popover 打开状态，避免受隐藏元素影响
+  const [tagSearchOpenMobile, setTagSearchOpenMobile] = useState(false);
+  const [tagSearchOpenDesktop, setTagSearchOpenDesktop] = useState(false);
 
   // 获取选中项的名称
   const selectedCategoryName = filters.categoryId 
@@ -120,12 +122,12 @@ export default function FaqFilters() {
           {/* 标签过滤 */}
           <div className="flex-1" id="faq-filters-tag">
             <label className="text-xs font-medium text-foreground">标签</label>
-            <Popover open={tagSearchOpen} onOpenChange={setTagSearchOpen}>
+            <Popover open={tagSearchOpenMobile} onOpenChange={setTagSearchOpenMobile}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   role="combobox"
-                  aria-expanded={tagSearchOpen}
+                  aria-expanded={tagSearchOpenMobile}
                   className="w-full justify-between h-8 text-xs"
                 >
                   {selectedTagName}
@@ -143,7 +145,7 @@ export default function FaqFilters() {
                         value={tag.name}
                         onSelect={() => {
                           updateFilter('tagId', tag.id);
-                          setTagSearchOpen(false);
+                          setTagSearchOpenMobile(false);
                         }}
                       >
                         <Check
@@ -218,12 +220,13 @@ export default function FaqFilters() {
 
         <div className="hidden md:block md:col-span-2">
           <label className="text-xs font-medium text-foreground">标签</label>
-          <Popover open={tagSearchOpen} onOpenChange={setTagSearchOpen}>
+          {/* 桌面端 Popover 使用独立的受控状态 */}
+          <Popover open={tagSearchOpenDesktop} onOpenChange={setTagSearchOpenDesktop}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
                 role="combobox"
-                aria-expanded={tagSearchOpen}
+                aria-expanded={tagSearchOpenDesktop}
                 className="w-full justify-between h-8 text-xs"
               >
                 {selectedTagName}
@@ -241,7 +244,7 @@ export default function FaqFilters() {
                       value={tag.name}
                       onSelect={() => {
                         updateFilter('tagId', tag.id);
-                        setTagSearchOpen(false);
+                        setTagSearchOpenDesktop(false);
                       }}
                     >
                       <Check

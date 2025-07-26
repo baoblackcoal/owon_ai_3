@@ -1,16 +1,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Loader2, Eye, ThumbsUp } from 'lucide-react';
+import { Loader2, Eye, ThumbsUp } from 'lucide-react';
 import type { FaqQuestion, FaqDetailResponse } from '@/types/faq';
 import { useUI } from '@/contexts/UIContext';
 import { marked } from 'marked';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import BackButton from '@/components/ui/BackButton';
 
 interface LikeResponse {
   liked: boolean;
@@ -23,7 +24,6 @@ interface QuestionWithRelated extends FaqQuestion {
 
 export default function FaqDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const { deviceType } = useUI();
   const { data: session } = useSession();
   const [question, setQuestion] = useState<QuestionWithRelated | null>(null);
@@ -58,34 +58,6 @@ export default function FaqDetailPage() {
     }
   }, [params.id]);
 
-  // 优化的返回函数，确保始终返回FAQ列表页
-  const handleBackToFaq = () => {
-    // 尝试从sessionStorage获取之前的筛选参数
-    const savedFilters = sessionStorage.getItem('faq-filters');
-    let queryParams = '';
-    
-    if (savedFilters) {
-      try {
-        const filters = JSON.parse(savedFilters);
-        const params = new URLSearchParams();
-        
-        if (filters.search) params.set('q', filters.search);
-        if (filters.categoryId) params.set('category_id', filters.categoryId);
-        if (filters.productModelId) params.set('product_model_id', filters.productModelId);
-        if (filters.tagId) params.set('tag_id', filters.tagId);
-        if (filters.sortBy && filters.sortBy !== 'latest') params.set('sort', filters.sortBy);
-        if (filters.period && filters.period !== 'all') params.set('period', filters.period);
-        
-        queryParams = params.toString();
-      } catch (err) {
-        console.warn('Failed to parse saved filters:', err);
-      }
-    }
-    
-    const faqUrl = queryParams ? `/faq?${queryParams}` : '/faq';
-    router.push(faqUrl);
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -105,23 +77,7 @@ export default function FaqDetailPage() {
         ${deviceType === 'mobile' ? 'w-full' : ''}
         px-4
       `}>
-        {/* 固定顶部导航 */}
-        <div className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 py-2 mb-4">
-          <Button 
-            variant="outline"
-            onClick={handleBackToFaq}
-            className={`
-              flex items-center space-x-2 font-medium
-              ${deviceType === 'mobile' ? 'h-11 px-4 text-base' : 'h-9 px-3'}
-              hover:bg-accent hover:text-accent-foreground
-              border-border/50
-            `}
-            aria-label="返回问答集列表"
-          >
-            <ArrowLeft className={deviceType === 'mobile' ? 'h-5 w-5' : 'h-4 w-4'} />
-            <span>返回问答集</span>
-          </Button>
-        </div>
+        <BackButton>返回问答集</BackButton>
         <Card>
           <CardContent className="pt-6">
             <div className="text-center text-muted-foreground">
@@ -176,23 +132,7 @@ export default function FaqDetailPage() {
       ${deviceType === 'mobile' ? 'w-full' : ''}
       px-4 space-y-4
     `}>
-      {/* 固定顶部导航 - 改进后的返回按钮 */}
-      <div className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 py-2 mb-4">
-        <Button 
-          variant="outline"
-          onClick={handleBackToFaq}
-          className={`
-            flex items-center space-x-2 font-medium
-            ${deviceType === 'mobile' ? 'h-11 px-4 text-base' : 'h-9 px-3'}
-            hover:bg-accent hover:text-accent-foreground
-            border-border/50
-          `}
-          aria-label="返回问答集列表"
-        >
-          <ArrowLeft className={deviceType === 'mobile' ? 'h-5 w-5' : 'h-4 w-4'} />
-          <span>返回问答集</span>
-        </Button>
-      </div>
+      <BackButton>返回问答集</BackButton>
 
       <Card>
         <CardHeader>

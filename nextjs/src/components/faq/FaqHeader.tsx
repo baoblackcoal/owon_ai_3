@@ -2,13 +2,15 @@
 
 export default function FaqHeader() {
   return (
-    <div className="mb-4">
-      <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-        视频和问答集
-      </h1>
-      {/* <p className="text-base text-muted-foreground">
-        汇总、分类并展示所有高质量的问答内容，快速找到技术解决方案和产品信息
-      </p> */}
+    <div className="flex-1">
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+          视频和问答集
+        </h1>
+        <p className="text-muted-foreground text-sm pb-4">
+          快速查找您需要的视频教程和常见问题解答
+        </p>
+      </div>
     </div>
   );
 } 

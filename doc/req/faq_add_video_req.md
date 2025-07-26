@@ -1,102 +1,107 @@
 # FAQ 视频支持需求文档
 
-> 参考 《专业产品经理的要求》
+> **遵照原则**：《专业产品经理的要求》，确保需求明确、功能设计合理、用户体验至上。
 
 ## 一、背景
-目前 FAQ 仅支持纯文本（Markdown）形式的内容与答案。随着产品功能愈发复杂，文字说明已难以满足用户对操作演示、故障排查等高阶场景的理解需求。引入视频讲解能够显著提升用户学习效率和问题解决率。
+当前 FAQ 系统仅支持纯文本（Markdown）内容。随着产品功能日趋复杂，仅靠文字难以清晰地向用户传达操作流程或解决复杂问题。引入视频讲解，特别是直观的操作演示，将极大提升用户理解效率和问题解决成功率，从而优化整体用户体验。
 
 ## 二、需求（Requirements）
-1. **核心需求**
-   - FAQ 问题允许绑定 1 个演示视频，视频是存在B站的,后续增加youtube。
-   - 管理端（后续建设）可为 FAQ 问题批量上传/编辑/删除视频。
-2. **用户目标**
-   - 新手用户通过观看视频快速完成设备上手、功能设置；
-3. **约束条件**
-   - 运行于 Cloudflare Workers，需考虑带宽成本与跨域；
-   - 不在本迭代实现上传功能，视频文件暂存至 **Cloudflare R2**，由后台配置视频直链（或 HLS）。
+1.  **核心需求**
+    - **为每个 FAQ 问题关联一个 Bilibili 视频**。视频作为答案的补充，提供操作演示或概念讲解。
+    - 后台管理系统（未来迭代）应支持对 FAQ 问题的视频进行增、删、改操作。
+2.  **用户目标**
+    - **提升问题解决效率**：用户通过观看视频，能够快速掌握功能使用方法或解决遇到的问题。
+    - **降低理解门槛**：对于复杂概念，视频能提供比文字更直观、易于吸收的解释。
+3.  **约束与假设**
+    - **视频源**：所有视频均托管于 Bilibili (B站)。
+    - **技术栈**：功能需在 Cloudflare Workers 环境下稳定运行，关注性能与成本。
+    - **迭代范围**：本期不包含视频上传功能，仅实现视频的嵌入与播放。
 
 ## 三、功能列表
-| 编号 | 功能 | 描述 |
+| 编号 | 功能 | 描述与价值 |
 |------|------|------|
-| F1 | FAQ 视频渲染 | FAQ 详情页加载并播放关联视频列表 |
-| F2 | 视频指示 | FAQ 列表卡片展示「📹」图标表明该问题含视频 |
-| F3 | API 扩展 | `GET /api/faq`、`GET /api/faq/{id}` 返回 `videos` 字段 |
-| F4 | 过滤器 | 新增“仅看有视频”过滤选项（可选，本期若时间充裕实现） |
-| F5 | 点赞、浏览统计 | 继承现有逻辑，不单独统计视频 |
+| F1 | **FAQ 视频播放** | 在 FAQ 详情页加载并播放关联的 Bilibili 视频。这是满足用户通过视频解决问题的核心功能。 |
+| F2 | **视频内容标识** | 在 FAQ 列表页，为包含视频的问题添加明确的「📹」图标，帮助用户快速识别并筛选内容。 |
+| F3 | **API 扩展** | `GET /api/faq` 和 `GET /api/faq/{id}` 接口需返回视频关联字段，为前端提供渲染数据。 |
+| F4 | **视频内容过滤** | 提供“仅看有视频”的筛选选项，优化用户在特定场景下的内容查找体验。 |
+| F5 | **统计继承** | 点赞、浏览量等统计沿用现有逻辑，无需为视频单独统计，保持系统简洁性。 |
 
 ## 四、数据库设计（Database Design）
-- **原则：** 仅修改 `faq_questions` 表，不新增额外表。
-- **字段调整：**
-  | 字段 | 类型 | 约束 | 说明 |
-  |------|------|------|------|
-  | video_urls | TEXT | 可空 | **JSON 字符串**，存放 B 站视频嵌入地址数组，例如 `["//player.bilibili.com/player.html?bvid=BV1X...&autoplay=0"]` |
-  | has_video | INTEGER | DEFAULT 0 | 0/1 标识是否存在视频，便于快速筛选 |
+- **原则**：最小化数据库结构变更，仅在 `faq_questions` 表上进行扩展。
+- **字段变更**：
+
+| 原字段 | 新字段 | 类型 | 约束 | 说明 |
+| :--- | :--- | :--- | :--- | :--- |
+| `video_urls` | `video_bilibili_bvid` | TEXT | 可空 | **核心变更**：存储 Bilibili 视频的 `BVID` (例如 `BV1nL8NzkEyx`)。这比存储完整 URL 更灵活、更节省空间，且意图明确。 |
+| `has_video` | `has_video` | INTEGER | DEFAULT 0 | 保持不变。作为冗余字段，用于快速筛选和索引，提升查询性能。 |
 
 - **迁移 SQL（追加至 `0007_create_faq_tables.sql`）**
   ```sql
-  -- FAQ 视频支持：为问题表增加视频字段
-  ALTER TABLE faq_questions ADD COLUMN video_urls TEXT; -- JSON array of bilibili iframe URLs
+  -- FAQ 视频支持：为问题表增加 Bilibili BVID 字段
+  ALTER TABLE faq_questions ADD COLUMN video_bilibili_bvid TEXT; -- Bilibili Video ID (BVID)
   ALTER TABLE faq_questions ADD COLUMN has_video INTEGER DEFAULT 0;
   CREATE INDEX IF NOT EXISTS idx_faq_questions_has_video ON faq_questions(has_video);
   ```
 
 - **数据一致性**：
-  - 当创建/更新 `video_urls` 时，若数组非空则同步将 `has_video` 设为 1，否则设为 0。
-  - 后续管理端保存时直接写入两个字段，避免触发器开销。
+  - 当创建/更新 `video_bilibili_bvid` 时，若该字段非空，则同步将 `has_video` 设为 1，否则设为 0。此逻辑由应用层保证。
 
-## 五、接口变更（仅声明）
-1. **列表接口** `GET /api/faq`
-   - 新增查询字段 `has_video`（布尔，可选）。
-   - 响应项中继续返回 `has_video`，并在需要时返回简要 `first_video_url`（列表卡片可取第一条用作预判）。
-2. **详情接口** `GET /api/faq/{id}`
-   - 新增字段 `videos: Array<string>`，由后端将 `video_urls` JSON 解析成字符串数组；顺序按存储顺序。
+## 五、接口变更
+1.  **列表接口** `GET /api/faq`
+    - 查询参数：新增 `has_video` (布尔值, 可选)。
+    - 响应体：`has_video` 字段继续返回。
+2.  **详情接口** `GET /api/faq/{id}`
+    - 响应体：新增 `video_bilibili_bvid: string | null` 字段，直接返回数据库存储的 BVID。
 
-> 以上接口变更向后兼容：旧客户端忽略新字段即可。
+> **兼容性说明**：以上接口变更向后兼容，旧版客户端将忽略新增字段。
 
 ## 六、前端 UX 设计（User Experience）
 ### 6.1 FAQ 列表页
-- 在 `FaqQuestionCard` 中若 `has_video=true`，在标题左侧展示小型摄像机图标（Tailwind `text-primary`）。
-- 支持根据过滤项「仅看有视频」刷新列表。
+- 在 `FaqQuestionCard` 组件中，若 `has_video=true`，则在标题左侧展示一个小型摄像机图标（使用 `lucide-react` 图标库，颜色为 `text-primary`），提供清晰的视觉引导。
 
 ### 6.2 FAQ 详情页
-- 播放器实现沿用 `src/app/test/bilibili/page.tsx` 中的懒加载思路：使用 `<iframe>` 嵌入 B 站播放器，外包 `aspect-video` 容器，加载动画、IntersectionObserver 预加载等均可复用为通用组件 `BilibiliVideo`。
-```
-标题
-标签 | 浏览量 | 点赞 …
-📹 视频播放器 (可横向滑动多个)
-— 分割线 —
-Markdown 答案
-相关推荐
-```
-- 播放器使用 **shadcn/ui** 的 `aspect-video` 容器包裹 `<video controls>`；多视频时使用横向滚动列表并显示序号。
-- 视频区域置于答案正文上方，确保用户先看到演示。
-- 播放时自动暂停其他视频，避免多声道。
-
-### 6.3 响应式
-- **Mobile**：播放器宽度 `100%`，高度自动；多视频使用左右滑动。
-- **Desktop**：宽度限制 `max-w-3xl`；多视频缩略图展示下方可点击切换。
+- **播放器实现**：
+    - 复用 `src/app/test/bilibili/page.tsx` 中的 `BilibiliVideo` 组件，并将其改造为通用组件。
+    - **动态构建 URL**：前端获取到 `video_bilibili_bvid` 后，在组件内部动态构建 Bilibili 播放器 `iframe` 的 URL。例如: `//player.bilibili.com/player.html?isOutside=true&bvid=${bvid}&autoplay=0`。
+- **页面布局**：
+    ```
+    问题标题
+    标签 | 浏览量 | 点赞数
+    📹 Bilibili 视频播放器
+    — 分割线 —
+    Markdown 格式的图文答案
+    相关问题推荐
+    ```
+    - 视频播放器置于答案正文之上，确保用户能第一时间看到最直观的解决方案。
+- **响应式设计**：
+    - **移动端**：播放器宽度为 `100%`，高度按 16:9 比例自适应。
+    - **桌面端**：播放器设置最大宽度 `max-w-3xl`，在页面中居中显示，以获得更好的观看体验。
 
 ## 七、技术可行性与风险
-| 风险 | 等级 | 缓解措施 |
-|------|------|----------|
-| 带宽成本增加 | 中 | 使用 Cloudflare R2 + HLS 分段；对大文件开启自动缓存 |
-| 跨域 (CORS) | 中 | R2 绑定域名配置 CORS `*` / 指定域 |
-| 不支持上传 | 低 | 本期仅支持手动配置 URL |
+| 风险点 | 等级 | 缓解措施 |
+| :--- | :--- | :--- |
+| Bilibili 播放器 API 变更 | 低 | Bilibili 作为大型平台，其嵌入式播放器 API 具有较好的稳定性。封装 `BilibiliVideo` 组件可在未来统一应对变更。 |
+| 视频内容不可用 | 中 | Bilibili 视频可能被删除或设为私有。当前版本暂不处理，未来可考虑增加后台健康检查功能。 |
 
 ## 八、验收标准
-- [ ] API 返回视频数据准确；
-- [ ] 前端可正常播放，首帧时间 ≤ 2s（CDN 缓存情况下）；
-- [ ] UI 兼容移动 & 桌面，无布局错乱；
-- [ ] 视频指示与过滤功能符合预期；
+- [ ] **API**：`GET /api/faq/{id}` 接口能准确返回 `video_bilibili_bvid` 字段。
+- [ ] **前端播放**：FAQ 详情页能根据获取的 BVID 正常加载并播放 Bilibili 视频。
+- [ ] **UI/UX**：
+    - [ ] 列表页的视频标识清晰可见。
+    - [ ] 详情页的视频播放器布局在各尺寸设备上（移动、桌面）均无错乱。
+    - [ ] “仅看有视频”的过滤功能（若实现）工作正常。
 
-## 九、测试 & Mock 数据
-- **SQL Mock**：在 `src/sql/test/faq/0001_test_insert_faq_test_data.sql` 中新增示例：
+## 九、测试与 Mock 数据
+- **SQL Mock 数据** (位于 `src/sql/test/faq/0001_test_insert_faq_test_data.sql`):
   ```sql
   -- 为 FAQ 视频功能准备示例数据
   UPDATE faq_questions
-  SET video_urls = '["//player.bilibili.com/player.html?isOutside=true&bvid=BV1nL8NzkEyx&autoplay=0"]',
-      has_video   = 1
+  SET video_bilibili_bvid = 'BV1nL8NzkEyx', -- 存储 BVID
+      has_video           = 1
   WHERE id = 'test-question-1';
   ```
-- 确保本地 `npx wrangler d1` 导入测试库后，FAQ 列表可筛选并展示含视频问题。
-
+- **测试步骤**：
+    1.  在本地运行 `pnpm dev-d1` 启动开发环境。
+    2.  确认测试数据已加载到本地 D1 数据库。
+    3.  访问 FAQ 列表页，验证视频标识和筛选功能。
+    4.  进入指定 FAQ 详情页，验证 Bilibili 视频是否能成功播放。

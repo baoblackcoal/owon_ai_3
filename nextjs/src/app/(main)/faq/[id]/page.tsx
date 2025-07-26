@@ -6,10 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import type { FaqQuestion, FaqDetailResponse } from '@/types/faq';
+import { useUI } from '@/contexts/UIContext';
 
 export default function FaqDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { deviceType } = useUI();
   const [question, setQuestion] = useState<FaqQuestion | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +53,12 @@ export default function FaqDetailPage() {
 
   if (error || !question) {
     return (
-      <div className="container mx-auto px-8 py-4 max-w-4xl">
+      <div className={`
+        flex flex-col h-full overflow-auto
+        ${deviceType === 'desktop' ? 'max-w-4xl mx-auto w-full' : ''}
+        ${deviceType === 'mobile' ? 'w-full' : ''}
+        px-4
+      `}>
         <div className="mb-4">
           <Button 
             variant="ghost" 
@@ -74,7 +81,12 @@ export default function FaqDetailPage() {
   }
 
   return (
-    <div className="container mx-auto px-8 py-4 max-w-4xl h-full overflow-auto">
+    <div className={`
+      flex flex-col h-full overflow-auto
+      ${deviceType === 'desktop' ? 'max-w-4xl mx-auto w-full' : ''}
+      ${deviceType === 'mobile' ? 'w-full' : ''}
+      px-4
+    `}>
       <div className="mb-4">
         <Button 
           variant="ghost" 

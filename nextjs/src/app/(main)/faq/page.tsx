@@ -10,12 +10,19 @@ import FaqSearch from '@/components/faq/FaqSearch';
 import FaqFilters from '@/components/faq/FaqFilters';
 import FaqQuestionList from '@/components/faq/FaqQuestionList';
 import { Button } from '@/components/ui/button';
+import { useUI } from '@/contexts/UIContext';
 
 function FaqPageContent() {
   const [showSearch, setShowSearch] = useState(false);
+  const { deviceType } = useUI();
 
   return (
-    <div className="container mx-auto px-8 py-4 max-w-7xl h-full overflow-auto">
+    <div className={`
+      flex flex-col h-full overflow-auto
+      ${deviceType === 'desktop' ? 'max-w-4xl mx-auto w-full' : ''}
+      ${deviceType === 'mobile' ? 'w-full' : ''}
+      px-4
+    `}>
       {/* 页面标题区域 */}
       <div className="flex items-center justify-between">
         <FaqHeader />

@@ -4,6 +4,7 @@ import { Eye, ThumbsUp, Video } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { FaqQuestion } from '@/types/faq';
 import { formatTime } from '@/lib/faq-utils';
+import BilibiliVideo from '@/components/BilibiliVideo';
 
 interface FaqQuestionCardProps {
   question: FaqQuestion;
@@ -11,6 +12,10 @@ interface FaqQuestionCardProps {
 }
 
 export default function FaqQuestionCard({ question, onClick }: FaqQuestionCardProps) {
+  const handleVideoClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
   return (
     <div
       className="bg-card rounded-lg p-4 border hover:shadow-md transition-shadow cursor-pointer"
@@ -24,6 +29,17 @@ export default function FaqQuestionCard({ question, onClick }: FaqQuestionCardPr
           )}
           <span>{question.title}</span>
         </h3>
+        
+        {/* 视频显示 */}
+        {question.video_bilibili_bvid && (
+          <div className="w-full aspect-video rounded-lg overflow-hidden" onClick={handleVideoClick}>
+            <BilibiliVideo
+              bvid={question.video_bilibili_bvid}
+              className="w-full h-full"
+              autoplay={false}
+            />
+          </div>
+        )}
         
         {/* 内容预览 */}
         <p className="text-sm text-muted-foreground line-clamp-3">

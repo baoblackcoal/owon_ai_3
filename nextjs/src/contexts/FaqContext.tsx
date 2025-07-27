@@ -39,6 +39,18 @@ export function FaqProvider({ children, initialFilters }: FaqProviderProps) {
   const [filters, setFilters] = useState<FaqFilters>(
     initialFilters || createDefaultFilters()
   );
+
+  // 客户端挂载后同步本地存储中的视图模式，避免与服务端初始渲染不一致
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedViewMode = localStorage.getItem('faq-view-mode');
+      if (savedViewMode === 'card' || savedViewMode === 'list') {
+        setFilters(prev => ({ ...prev, viewMode: savedViewMode as 'card' | 'list' }));
+      }
+    }
+    // 仅在组件首次挂载时执行
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [filterData, setFilterData] = useState<FaqFiltersResponse>({
     categories: [],
     product_models: [],

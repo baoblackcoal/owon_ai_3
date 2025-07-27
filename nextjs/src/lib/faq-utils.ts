@@ -72,9 +72,7 @@ export function createDefaultFilters(): FaqFilters {
  * 从URL参数初始化筛选条件
  */
 export function initFiltersFromParams(searchParams: URLSearchParams): FaqFilters {
-  // 尝试从localStorage获取viewMode，如果没有则使用默认值
-  const savedViewMode = typeof window !== 'undefined' ? localStorage.getItem('faq-view-mode') : null;
-  
+  // 注意：不可在此直接访问 localStorage，否则会导致服务端与客户端初始渲染不一致（hydration mismatch）
   return {
     search: searchParams.get('q') || '',
     categoryId: searchParams.get('category_id') || undefined,
@@ -83,6 +81,6 @@ export function initFiltersFromParams(searchParams: URLSearchParams): FaqFilters
     hasVideo: searchParams.get('has_video') === 'true' ? true : undefined,
     sortBy: (searchParams.get('sort') as any) || 'latest',
     period: (searchParams.get('period') as any) || 'all',
-    viewMode: (savedViewMode as 'list' | 'card') || 'card'
+    viewMode: 'card' // 统一默认视图，后续在客户端再根据 localStorage 调整
   };
 } 

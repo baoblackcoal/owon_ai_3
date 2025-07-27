@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
 export default function AdminChangePasswordPage() {
-  const [currentPassword, setCurrentPassword] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('admin');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -66,7 +66,8 @@ export default function AdminChangePasswordPage() {
           router.push('/admin/login');
         }, 1500);
       } else {
-        toast.error(data.error || '密码修改失败');
+        const errorData = data as { error?: string };
+        toast.error(errorData.error || '密码修改失败');
       }
     } catch (error) {
       console.error('修改密码失败:', error);

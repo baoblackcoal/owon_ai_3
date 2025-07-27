@@ -40,11 +40,23 @@ export default function AdminLoginPage() {
           toast.error(result.error);
         }        
       } else if (result?.ok) {
-        toast.success('登录成功');
-        // 等待一下让toast显示
-        await new Promise(resolve => setTimeout(resolve, 500));
-        // 使用replace替换掉历史记录中的登录页
-        await router.replace('/admin');
+        // 检查是否是首次登录（密码为空的情况）
+        // 通过检查session中的requiresPasswordChange来判断
+        const session = await fetch('/api/auth/session').then(res => res.json()) as any;
+        
+        if (session?.user?.requiresPasswordChange) {
+          toast.success('首次登录，请修改密码');
+          // 等待一下让toast显示
+          await new Promise(resolve => setTimeout(resolve, 500));
+          // 跳转到修改密码页面
+          await router.replace('/admin/change-password');
+        } else {
+          toast.success('登录成功');
+          // 等待一下让toast显示
+          await new Promise(resolve => setTimeout(resolve, 500));
+          // 使用replace替换掉历史记录中的登录页
+          await router.replace('/admin');
+        }
         router.refresh();
       }
     } catch (error) {

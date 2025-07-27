@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       requires_password_change: number;
     } | null;
 
-    if (!user || !user.password_hash) {
+    if (!user) {
       return NextResponse.json(
         { error: '用户不存在' },
         { status: 404 }
@@ -60,7 +60,17 @@ export async function POST(request: NextRequest) {
     }
 
     // 验证当前密码
-    const isCurrentPasswordValid = bcrypt.compareSync(currentPassword, user.password_hash);
+    let isCurrentPasswordValid = false;
+    
+    // 检查密码哈希是否为空（空密码情况）
+    if (!user.password_hash || user.password_hash.trim() === '') {
+      // 空密码情况下，只允许使用'admin'作为当前密码
+      isCurrentPasswordValid = (currentPassword === 'admin');
+    } else {
+      // 正常密码验证
+      isCurrentPasswordValid = bcrypt.compareSync(currentPassword, user.password_hash);
+    }
+    
     if (!isCurrentPasswordValid) {
       return NextResponse.json(
         { error: '当前密码不正确' },

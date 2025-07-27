@@ -8,6 +8,8 @@ declare module "next-auth" {
       is_guest: number;
       chat_count: number;
       last_chat_date: string | null;
+      role: string;
+      requiresPasswordChange: boolean;
     };
   }
 
@@ -17,6 +19,8 @@ declare module "next-auth" {
     is_guest: number;
     chat_count: number;
     last_chat_date: string | null;
+    role: string;
+    requiresPasswordChange: boolean;
   }
 }
 
@@ -27,5 +31,7 @@ declare module "next-auth/jwt" {
     is_guest: number;
     chat_count: number;
     last_chat_date: string | null;
+    role: string;
+    requiresPasswordChange: boolean;
   }
 } 

@@ -12,6 +12,12 @@ const loginSchema = z.object({
   password: z.string().min(6, "密码至少6位"),
 });
 
+// Admin登录表单验证schema
+const adminLoginSchema = z.object({
+  username: z.string().min(1, "请输入用户名"),
+  password: z.string().min(1, "请输入密码"),
+});
+
 // 用户类型定义
 interface AuthUser {
   id: string;
@@ -19,6 +25,8 @@ interface AuthUser {
   is_guest: number;
   chat_count: number;
   last_chat_date: string | null;
+  role: string;
+  requiresPasswordChange: boolean;
 }
 
 // 用户类型定义
@@ -28,6 +36,8 @@ interface User {
   is_guest: number;
   chat_count: number;
   last_chat_date: string | null;
+  role: string;
+  requires_password_change: number;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -37,13 +47,11 @@ const authConfig = (NextAuth as any)({
       name: "credentials",
       credentials: {
         email: { label: "邮箱", type: "email" },
+        username: { label: "用户名", type: "text" },
         password: { label: "密码", type: "password" }
       },
       async authorize(credentials) {
         try {
-          // 验证输入
-          const { email, password } = loginSchema.parse(credentials);
-          
           // 获取数据库连接
           const { env } = await getCloudflareContext();
           const db = (env as unknown as { DB?: D1Database }).DB;
@@ -52,30 +60,85 @@ const authConfig = (NextAuth as any)({
             throw new Error('数据库未绑定');
           }
 
-          // 查询用户
-          const user = await db.prepare(`
-            SELECT id, email, password_hash, is_guest, chat_count, last_chat_date
-            FROM User 
-            WHERE email = ? AND is_guest = 0
-          `).bind(email).first() as User & { password_hash: string } | null;
+          // 检查是否是admin登录（通过username字段判断）
+          if (credentials?.username) {
+            // Admin登录逻辑
+            const { username, password } = adminLoginSchema.parse(credentials);
+            
+            // 查询admin用户
+            const user = await db.prepare(`
+              SELECT id, email, password_hash, is_guest, chat_count, last_chat_date, role, requires_password_change
+              FROM User 
+              WHERE id = ? AND role = 'admin'
+            `).bind(username).first() as User & { password_hash: string } | null;
 
-          if (!user || !user.password_hash) {
-            return null;
+            if (!user) {
+              return null;
+            }
+
+            // 检查密码哈希是否为空（空密码情况）
+            if (!user.password_hash || user.password_hash.trim() === '') {
+              // 空密码情况下，只允许使用'admin'作为密码
+              if (password === 'admin') {
+                return {
+                  id: user.id,
+                  email: user.email || '',
+                  is_guest: user.is_guest,
+                  chat_count: user.chat_count,
+                  last_chat_date: user.last_chat_date,
+                  role: user.role,
+                  requiresPasswordChange: user.requires_password_change === 1,
+                };
+              }
+              return null;
+            }
+
+            // 验证密码
+            const isValid = bcrypt.compareSync(password, user.password_hash);
+            if (!isValid) {
+              return null;
+            }
+
+            return {
+              id: user.id,
+              email: user.email || '',
+              is_guest: user.is_guest,
+              chat_count: user.chat_count,
+              last_chat_date: user.last_chat_date,
+              role: user.role,
+              requiresPasswordChange: user.requires_password_change === 1,
+            };
+          } else {
+            // 普通用户登录逻辑
+            const { email, password } = loginSchema.parse(credentials);
+            
+            // 查询用户
+            const user = await db.prepare(`
+              SELECT id, email, password_hash, is_guest, chat_count, last_chat_date, role, requires_password_change
+              FROM User 
+              WHERE email = ? AND is_guest = 0
+            `).bind(email).first() as User & { password_hash: string } | null;
+
+            if (!user || !user.password_hash) {
+              return null;
+            }
+
+            // 验证密码
+            const isValid = bcrypt.compareSync(password, user.password_hash);
+            if (!isValid) {
+              return null;
+            }
+
+            return {
+              id: user.id,
+              email: user.email,
+              is_guest: user.is_guest,
+              chat_count: user.chat_count,
+              last_chat_date: user.last_chat_date,
+              role: user.role,
+              requiresPasswordChange: user.requires_password_change === 1,
+            };
           }
-
-          // 验证密码
-          const isValid = bcrypt.compareSync(password, user.password_hash);
-          if (!isValid) {
-            return null;
-          }
-
-          return {
-            id: user.id,
-            email: user.email,
-            is_guest: user.is_guest,
-            chat_count: user.chat_count,
-            last_chat_date: user.last_chat_date,
-          };
         } catch (error) {
           console.error('认证失败:', error);
           return null;
@@ -98,6 +161,8 @@ const authConfig = (NextAuth as any)({
         token.is_guest = user.is_guest;
         token.chat_count = user.chat_count;
         token.last_chat_date = user.last_chat_date;
+        token.role = user.role;
+        token.requiresPasswordChange = user.requiresPasswordChange;
       }
       return token;
     },
@@ -108,6 +173,8 @@ const authConfig = (NextAuth as any)({
         session.user.is_guest = token.is_guest as number;
         session.user.chat_count = token.chat_count as number;
         session.user.last_chat_date = token.last_chat_date as string | null;
+        session.user.role = token.role as string;
+        session.user.requiresPasswordChange = token.requiresPasswordChange as boolean;
       }
       return session;
     }

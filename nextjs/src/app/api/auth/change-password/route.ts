@@ -6,7 +6,7 @@ import { z } from 'zod';
 
 // 修改密码表单验证schema
 const changePasswordSchema = z.object({
-  currentPassword: z.string().min(6, "当前密码至少6位"),
+  currentPassword: z.string().min(1, "请输入当前密码"),
   newPassword: z.string().min(6, "新密码至少6位"),
   confirmPassword: z.string().min(6, "确认密码至少6位"),
 }).refine((data) => data.newPassword === data.confirmPassword, {
@@ -42,10 +42,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 获取用户信息
+    // 获取用户信息（支持admin用户）
     const user = await db.prepare(`
-      SELECT id, password_hash FROM User WHERE id = ? AND is_guest = 0
-    `).bind(session.user.id).first() as { id: string; password_hash: string } | null;
+      SELECT id, password_hash, role, requires_password_change FROM User WHERE id = ?
+    `).bind(session.user.id).first() as { 
+      id: string; 
+      password_hash: string; 
+      role: string;
+      requires_password_change: number;
+    } | null;
 
     if (!user || !user.password_hash) {
       return NextResponse.json(
@@ -67,10 +72,22 @@ export async function POST(request: NextRequest) {
     const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12');
     const newPasswordHash = bcrypt.hashSync(newPassword, saltRounds);
 
-    // 更新密码
-    await db.prepare(`
-      UPDATE User SET password_hash = ?, updated_at = datetime('now') WHERE id = ?
-    `).bind(newPasswordHash, session.user.id).run();
+    // 更新密码（如果是admin用户首次修改密码，则更新requires_password_change字段）
+    if (user.role === 'admin' && user.requires_password_change === 1) {
+      // admin用户首次修改密码，同时更新requires_password_change为0
+      await db.prepare(`
+        UPDATE User SET 
+          password_hash = ?, 
+          requires_password_change = 0,
+          updated_at = datetime('now') 
+        WHERE id = ?
+      `).bind(newPasswordHash, session.user.id).run();
+    } else {
+      // 普通密码修改
+      await db.prepare(`
+        UPDATE User SET password_hash = ?, updated_at = datetime('now') WHERE id = ?
+      `).bind(newPasswordHash, session.user.id).run();
+    }
 
     return NextResponse.json(
       { message: '密码修改成功' },

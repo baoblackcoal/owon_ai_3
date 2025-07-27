@@ -28,6 +28,8 @@ export async function GET(
         q.created_by,
         q.created_at,
         q.updated_at,
+        q.video_bilibili_bvid,
+        q.has_video,
         c.name as category_name,
         c.description as category_description,
         c.created_at as category_created_at,
@@ -81,6 +83,8 @@ export async function GET(
           q.created_by,
           q.created_at,
           q.updated_at,
+          q.video_bilibili_bvid,
+          q.has_video,
           c.name as category_name,
           pm.name as product_model_name,
           CASE WHEN l.id IS NOT NULL THEN 1 ELSE 0 END as is_liked
@@ -119,6 +123,8 @@ export async function GET(
       created_by: questionResult.created_by,
       created_at: questionResult.created_at,
       updated_at: questionResult.updated_at,
+      video_bilibili_bvid: questionResult.video_bilibili_bvid,
+      has_video: Boolean(questionResult.has_video),
       is_liked: Boolean(questionResult.is_liked),
       category: questionResult.category_name ? {
         id: questionResult.category_id,
@@ -152,6 +158,8 @@ export async function GET(
       created_by: q.created_by,
       created_at: q.created_at,
       updated_at: q.updated_at,
+      video_bilibili_bvid: q.video_bilibili_bvid,
+      has_video: Boolean(q.has_video),
       is_liked: Boolean(q.is_liked),
       category: q.category_name ? {
         id: q.category_id,

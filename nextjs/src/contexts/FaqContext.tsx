@@ -73,7 +73,14 @@ export function FaqProvider({ children, initialFilters }: FaqProviderProps) {
 
   useEffect(() => {
     refreshQuestions();
-  }, [debouncedSearch, filters.categoryId, filters.productModelId, filters.tagId, filters.sortBy, filters.period]);
+  }, [debouncedSearch, filters.categoryId, filters.productModelId, filters.tagId, filters.hasVideo, filters.sortBy, filters.period]);
+
+  // 保存viewMode到localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('faq-view-mode', filters.viewMode);
+    }
+  }, [filters.viewMode]);
 
   // 更新单个筛选条件
   const updateFilter = (key: keyof FaqFilters, value: any) => {

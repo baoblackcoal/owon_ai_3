@@ -1,6 +1,6 @@
 'use client';
 
-import { Eye, ThumbsUp } from 'lucide-react';
+import { Eye, ThumbsUp, Video } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { FaqQuestion } from '@/types/faq';
 import { formatTime } from '@/lib/faq-utils';
@@ -18,8 +18,11 @@ export default function FaqQuestionCard({ question, onClick }: FaqQuestionCardPr
     >
       <div className="space-y-3">
         {/* 标题 */}
-        <h3 className="text-lg font-medium text-foreground line-clamp-2">
-          {question.title}
+        <h3 className="text-lg font-medium text-foreground line-clamp-2 flex items-start gap-2">
+          {question.has_video && (
+            <Video className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+          )}
+          <span>{question.title}</span>
         </h3>
         
         {/* 内容预览 */}

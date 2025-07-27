@@ -10,6 +10,7 @@ export function buildFaqQueryParams(filters: FaqFilters): URLSearchParams {
   if (filters.categoryId) params.set('category_id', filters.categoryId);
   if (filters.productModelId) params.set('product_model_id', filters.productModelId);
   if (filters.tagId) params.set('tag_id', filters.tagId);
+  if (filters.hasVideo) params.set('has_video', 'true');
   params.set('sort', filters.sortBy);
   if (filters.sortBy === 'ranking') params.set('period', filters.period);
   
@@ -48,7 +49,7 @@ export function formatTime(timeStr: string): string {
  * 检查是否有活跃的筛选条件
  */
 export function hasActiveFilters(filters: FaqFilters): boolean {
-  return !!(filters.search || filters.categoryId || filters.productModelId || filters.tagId);
+  return !!(filters.search || filters.categoryId || filters.productModelId || filters.tagId || filters.hasVideo);
 }
 
 /**
@@ -60,8 +61,10 @@ export function createDefaultFilters(): FaqFilters {
     categoryId: undefined,
     productModelId: undefined,
     tagId: undefined,
+    hasVideo: undefined,
     sortBy: 'latest',
-    period: 'all'
+    period: 'all',
+    viewMode: 'card' // 默认卡片视图
   };
 }
 
@@ -69,12 +72,17 @@ export function createDefaultFilters(): FaqFilters {
  * 从URL参数初始化筛选条件
  */
 export function initFiltersFromParams(searchParams: URLSearchParams): FaqFilters {
+  // 尝试从localStorage获取viewMode，如果没有则使用默认值
+  const savedViewMode = typeof window !== 'undefined' ? localStorage.getItem('faq-view-mode') : null;
+  
   return {
     search: searchParams.get('q') || '',
     categoryId: searchParams.get('category_id') || undefined,
     productModelId: searchParams.get('product_model_id') || undefined,
     tagId: searchParams.get('tag_id') || undefined,
+    hasVideo: searchParams.get('has_video') === 'true' ? true : undefined,
     sortBy: (searchParams.get('sort') as any) || 'latest',
-    period: (searchParams.get('period') as any) || 'all'
+    period: (searchParams.get('period') as any) || 'all',
+    viewMode: (savedViewMode as 'list' | 'card') || 'card'
   };
 } 

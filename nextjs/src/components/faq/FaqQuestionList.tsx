@@ -5,9 +5,10 @@ import { FileQuestion } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFaq } from '@/contexts/FaqContext';
 import FaqQuestionCard from './FaqQuestionCard';
+import FaqQuestionListItem from './FaqQuestionListItem';
 
 export default function FaqQuestionList() {
-  const { questions, loading, saveScrollPosition } = useFaq();
+  const { questions, loading, filters, saveScrollPosition } = useFaq();
   const router = useRouter();
 
   const handleQuestionClick = (questionId: string) => {
@@ -40,11 +41,19 @@ export default function FaqQuestionList() {
   return (
     <div className="space-y-4">
       {questions.map((question) => (
-        <FaqQuestionCard
-          key={question.id}
-          question={question}
-          onClick={handleQuestionClick}
-        />
+        filters.viewMode === 'list' ? (
+          <FaqQuestionListItem
+            key={question.id}
+            question={question}
+            onClick={handleQuestionClick}
+          />
+        ) : (
+          <FaqQuestionCard
+            key={question.id}
+            question={question}
+            onClick={handleQuestionClick}
+          />
+        )
       ))}
     </div>
   );

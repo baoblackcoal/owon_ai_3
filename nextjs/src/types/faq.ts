@@ -33,6 +33,9 @@ export interface FaqQuestion {
   created_by?: string;
   created_at: string;
   updated_at: string;
+  // 视频支持
+  video_bilibili_bvid?: string; // Bilibili视频BVID
+  has_video?: boolean; // 是否有视频（冗余字段，用于快速筛选）
   // 关联数据
   category?: FaqCategory;
   product_model?: FaqProductModel;
@@ -53,6 +56,7 @@ export interface FaqListParams {
   category_id?: string;
   product_model_id?: string;
   tag_id?: string;
+  has_video?: boolean; // 仅显示有视频的问题
   sort?: 'latest' | 'best' | 'ranking' | 'my-share';
   period?: 'week' | 'month' | 'quarter' | 'year' | 'all';
   limit?: number;
@@ -86,8 +90,10 @@ export interface FaqFilters {
   categoryId?: string;
   productModelId?: string;
   tagId?: string;
+  hasVideo?: boolean; // 仅显示有视频的问题
   sortBy: 'latest' | 'best' | 'ranking' | 'my-share';
   period: 'week' | 'month' | 'quarter' | 'year' | 'all';
+  viewMode: 'list' | 'card'; // 视图模式
 }
 
 export interface FaqViewMode {

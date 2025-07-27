@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
       category_id: searchParams.get('category_id') || undefined,
       product_model_id: searchParams.get('product_model_id') || undefined,
       tag_id: searchParams.get('tag_id') || undefined,
+      has_video: searchParams.get('has_video') === 'true' ? true : undefined,
       sort: (searchParams.get('sort') as FaqListParams['sort']) || 'latest',
       period: (searchParams.get('period') as FaqListParams['period']) || 'all',
       limit: parseInt(searchParams.get('limit') || '20'),
@@ -37,6 +38,8 @@ export async function GET(request: NextRequest) {
         q.created_by,
         q.created_at,
         q.updated_at,
+        q.video_bilibili_bvid,
+        q.has_video,
         c.name as category_name,
         pm.name as product_model_name,
         CASE WHEN l.id IS NOT NULL THEN 1 ELSE 0 END as is_liked
@@ -70,6 +73,11 @@ export async function GET(request: NextRequest) {
       queryParams.push(params.product_model_id);
     }
 
+    // 视频筛选
+    if (params.has_video) {
+      whereConditions.push('q.has_video = 1');
+    }
+
     // 标签筛选
     if (params.tag_id) {
       baseQuery = `
@@ -86,6 +94,8 @@ export async function GET(request: NextRequest) {
           q.created_by,
           q.created_at,
           q.updated_at,
+          q.video_bilibili_bvid,
+          q.has_video,
           c.name as category_name,
           pm.name as product_model_name,
           CASE WHEN l.id IS NOT NULL THEN 1 ELSE 0 END as is_liked
@@ -191,6 +201,8 @@ export async function GET(request: NextRequest) {
       created_by: q.created_by,
       created_at: q.created_at,
       updated_at: q.updated_at,
+      video_bilibili_bvid: q.video_bilibili_bvid,
+      has_video: Boolean(q.has_video),
       is_liked: Boolean(q.is_liked),
       category: q.category_name ? {
         id: q.category_id,

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, Check, X } from 'lucide-react';
+import { ChevronDown, Check, X, Video, LayoutGrid, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -261,22 +261,56 @@ export default function FaqFilters() {
           </Popover>
         </div>
 
-        {/* 排序和清除按钮 */}
+        {/* 视频筛选和排序 */}
         <div className="space-y-1 md:col-span-6">
-          <label className="text-xs font-medium text-foreground">排序</label>
+          <label className="text-xs font-medium text-foreground">排序与筛选</label>
           <div className="flex gap-1">
             <Tabs 
               value={filters.sortBy} 
               onValueChange={(value) => updateFilter('sortBy', value as any)} 
               className="flex-1"
             >
-              <TabsList className="grid grid-cols-4 h-8 text-xs gap-2">
+              <TabsList className="grid grid-cols-3 h-8 text-xs gap-2">
                 <TabsTrigger value="latest" className="text-xs px-2">最新</TabsTrigger>
                 <TabsTrigger value="best" className="text-xs px-2">最佳</TabsTrigger>
                 <TabsTrigger value="ranking" className="text-xs px-2">排行</TabsTrigger>
                 {/* <TabsTrigger value="my-share" className="text-xs px-2">我的分享</TabsTrigger> */}
               </TabsList>
             </Tabs>
+            
+            <Button
+              variant={filters.hasVideo ? "default" : "outline"}
+              size="sm"
+              onClick={() => updateFilter('hasVideo', filters.hasVideo ? undefined : true)}
+              className="h-8 px-2 text-xs"
+              aria-label="仅显示有视频的问题"
+            >
+              <Video className="h-3 w-3 mr-1" />
+              视频
+            </Button>
+            
+            {/* 视图切换按钮 */}
+            <div className="flex border rounded-md">
+              <Button
+                variant={filters.viewMode === 'card' ? "default" : "ghost"}
+                size="sm"
+                onClick={() => updateFilter('viewMode', 'card')}
+                className="h-8 px-2 text-xs rounded-r-none border-r"
+                aria-label="卡片视图"
+              >
+                <LayoutGrid className="h-3 w-3" />
+              </Button>
+              <Button
+                variant={filters.viewMode === 'list' ? "default" : "ghost"}
+                size="sm"
+                onClick={() => updateFilter('viewMode', 'list')}
+                className="h-8 px-2 text-xs rounded-l-none"
+                aria-label="列表视图"
+              >
+                <List className="h-3 w-3" />
+              </Button>
+            </div>
+            
             {activeFilters && (
               <Button 
                 variant="ghost" 

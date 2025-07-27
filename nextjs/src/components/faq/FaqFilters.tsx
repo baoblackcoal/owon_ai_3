@@ -270,10 +270,10 @@ export default function FaqFilters() {
               onValueChange={(value) => updateFilter('sortBy', value as any)} 
               className="flex-1"
             >
-              <TabsList className="grid grid-cols-3 h-8 text-xs gap-2">
+              <TabsList className="grid grid-cols-3 h-8 text-xs gap-2" id="faq-filters-sort-by">
                 <TabsTrigger value="latest" className="text-xs px-2">最新</TabsTrigger>
                 <TabsTrigger value="best" className="text-xs px-2">最佳</TabsTrigger>
-                <TabsTrigger value="ranking" className="text-xs px-2">排行</TabsTrigger>
+                <TabsTrigger value="ranking" className="text-xs px-2">热门</TabsTrigger>
                 {/* <TabsTrigger value="my-share" className="text-xs px-2">我的分享</TabsTrigger> */}
               </TabsList>
             </Tabs>
@@ -327,8 +327,8 @@ export default function FaqFilters() {
       </div>
 
       {/* 时间范围选择器 */}
-      {filters.sortBy === 'ranking' && (
-        <div className="flex items-center gap-2 pt-2 border-t">
+      {(filters.sortBy === 'ranking' || filters.sortBy === 'best') && (
+        <div className="flex items-center gap-2 pt-2 border-t" id="faq-filters-period">
           <span className="text-xs font-medium">时间范围:</span>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

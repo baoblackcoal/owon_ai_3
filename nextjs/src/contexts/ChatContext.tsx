@@ -40,7 +40,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     const userMessage: Message = { role: 'user', content: message };
     setMessages(prev => [...prev, userMessage]);
 
-    const aiMessage: Message = { role: 'assistant', content: '', feedback: null };
+    const aiMessage: Message = { role: 'assistant', content: '', thought: '', feedback: null };
     setMessages(prev => [...prev, aiMessage]);
 
     setIsLoading(true);
@@ -108,26 +108,34 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
           data.forEach(item => {
             if ('output' in item) {
-              const dashScopeResponse = item as DashScopeResponse;
-              const thoughts = dashScopeResponse.output?.thoughts;    
-              let thought = '';
-              if (thoughts) {
-                thoughts.forEach((thoughtItem: { action: string; thought?: string }) => {
-                  if (thoughtItem.action === 'reasoning' && typeof thoughtItem.thought === 'string') {
-                    thought = thoughtItem.thought;
-                  }
-                });
-              }
-              const text = dashScopeResponse.output?.text;             
-              const t = thought !== '' ? thought : text;
-              if (t) {
+              const { output } = item as DashScopeResponse;
+
+              // 更新 assistant 的主要回复文本
+              if (output.text) {
                 setMessages(prev => {
                   if (prev.length === 0) return prev;
                   return prev.map((msg, idx) =>
                     idx === prev.length - 1
-                      ? { ...msg, content: msg.content + t }
+                      ? { ...msg, content: msg.content + output.text }
                       : msg
                   );
+                });
+              }
+
+              // 更新 reasoning thought
+              if (output.thoughts) {
+                output.thoughts.forEach(thoughtItem => {
+                  if (thoughtItem.action === 'reasoning' && typeof thoughtItem.thought === 'string') {
+                    const thoughtText = thoughtItem.thought;
+                    setMessages(prev => {
+                      if (prev.length === 0) return prev;
+                      return prev.map((msg, idx) =>
+                        idx === prev.length - 1
+                          ? { ...msg, thought: (msg.thought || '') + thoughtText }
+                          : msg
+                      );
+                    });
+                  }
                 });
               }
             }

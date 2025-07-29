@@ -2,6 +2,7 @@ export interface Message {
   id?: string;
   role: 'user' | 'assistant';
   content: string;
+  thought?: string;
   feedback?: 'like' | 'dislike' | null;
 }
 

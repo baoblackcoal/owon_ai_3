@@ -8,12 +8,12 @@ interface InstrumentType {
 }
 
 const pipelineIdsOscSeries: PipelineIdsSeries = {
-    "ADS800A": ["he9rcpebc3", "utmhvnxgey"],
-    "ADS900A": ["fppfqitpyd", "d2wqds0m3e"],
-    "ADS3000": ["fppfqitpyd", "d2wqds0m3e"],
-    "ADS3000A": ["fppfqitpyd", "d2wqds0m3e"],
-    "ADS4000": ["fppfqitpyd", "d2wqds0m3e"],
-    "ADS4000A": ["fppfqitpyd", "d2wqds0m3e"],
+    "ADS800A": ["he9rcpebc3", "b8bebfoeif"],
+    "ADS900A": ["fppfqitpyd", "b8bebfoeif"],
+    "ADS3000": ["fppfqitpyd", "b8bebfoeif"],
+    "ADS3000A": ["fppfqitpyd", "b8bebfoeif"],
+    "ADS4000": ["fppfqitpyd", "b8bebfoeif"],
+    "ADS4000A": ["fppfqitpyd", "b8bebfoeif"],
 };
 
 // const pipelineIdsAfgSeries: PipelineIdsSeries = {

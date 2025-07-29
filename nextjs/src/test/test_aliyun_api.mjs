@@ -9,13 +9,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // 从 src/.env.development.local 获取配置
-dotenv.config({ path: path.resolve(__dirname, '../.env.development.local') });
+dotenv.config({ path: path.resolve(__dirname, '../../.env.development.local') });
 
 const apiKey = process.env.DASHSCOPE_API_KEY;
 const appId = process.env.DASHSCOPE_APP_ID;
 
 if (!apiKey || !appId) {
-    console.error('请确保已在 src/.env.development.local 中设置环境变量 DASHSCOPE_API_KEY 和 DASHSCOPE_APP_ID');
+    console.error('请确保已在 ../../.env.development.local 中设置环境变量 DASHSCOPE_API_KEY 和 DASHSCOPE_APP_ID');
     process.exit(1);
 }
 

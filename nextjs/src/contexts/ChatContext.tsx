@@ -109,7 +109,17 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           data.forEach(item => {
             if ('output' in item) {
               const dashScopeResponse = item as DashScopeResponse;
-              const t = dashScopeResponse.output?.text;
+              const thoughts = dashScopeResponse.output?.thoughts;    
+              let thought = '';
+              if (thoughts) {
+                thoughts.forEach((thoughtItem: { action: string; thought?: string }) => {
+                  if (thoughtItem.action === 'reasoning' && typeof thoughtItem.thought === 'string') {
+                    thought = thoughtItem.thought;
+                  }
+                });
+              }
+              const text = dashScopeResponse.output?.text;             
+              const t = thought !== '' ? thought : text;
               if (t) {
                 setMessages(prev => {
                   if (prev.length === 0) return prev;

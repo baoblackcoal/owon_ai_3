@@ -5,13 +5,17 @@ export interface Message {
   feedback?: 'like' | 'dislike' | null;
 }
 
+// 根据DashScope返回的thoughts结构完善类型定义
 export interface DashScopeThought {
-  action: string;
-  action_input_stream: string;
-  arguments: string;
-  action_type: string;
-  observation: string;
-  action_name: string;
+  action: string; // 动作类型，如 rag、reasoning
+  action_input_stream?: string; // rag时有，reasoning时无
+  arguments?: string; // rag时有，reasoning时无
+  action_type: string; // agentRag 或 reasoning
+  observation?: string; // rag时有，reasoning时无
+  action_name: string; // rag: 知识检索，reasoning: 思考过程
+  // reasoning类型特有字段
+  thought?: string; // reasoning时有
+  response?: string; // reasoning时有
 }
 
 export interface DashScopeUsage {

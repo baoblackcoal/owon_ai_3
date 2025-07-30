@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter, usePathname } from 'next/navigation';
+
 import { Button } from "@/components/ui/button";
-import { Menu, HelpCircle, MessageSquare } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import AuthDialog from './AuthDialog';
 import UserMenu from './UserMenu';
 import SettingsDialog from './SettingsDialog';
@@ -18,8 +18,6 @@ export default function Header() {
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   
   const { deviceType, toggleMobileSidebar } = useUI();
-  const router = useRouter();
-  const pathname = usePathname();
 
   const handleAuthSuccess = () => {
     // 认证成功后刷新页面以获取最新的用户数据

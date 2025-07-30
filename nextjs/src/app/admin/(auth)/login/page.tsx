@@ -42,7 +42,7 @@ export default function AdminLoginPage() {
       } else if (result?.ok) {
         // 检查是否是首次登录（密码为空的情况）
         // 通过检查session中的requiresPasswordChange来判断
-        const session = await fetch('/api/auth/session').then(res => res.json()) as any;
+        const session = await fetch('/api/auth/session').then(res => res.json()) as { user?: { requiresPasswordChange?: boolean } };
         
         if (session?.user?.requiresPasswordChange) {
           toast.success('首次登录，请修改密码');

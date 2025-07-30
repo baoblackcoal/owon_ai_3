@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import type { 
   FaqQuestion, 
   FaqFilters,
@@ -18,7 +18,7 @@ interface FaqContextValue {
   
   // 操作
   setFilters: (filters: FaqFilters) => void;
-  updateFilter: (key: keyof FaqFilters, value: any) => void;
+  updateFilter: (key: keyof FaqFilters, value: FaqFilters[keyof FaqFilters]) => void;
   clearAllFilters: () => void;
   refreshQuestions: () => Promise<void>;
   // 滚动位置管理
@@ -48,9 +48,7 @@ export function FaqProvider({ children, initialFilters }: FaqProviderProps) {
         setFilters(prev => ({ ...prev, viewMode: savedViewMode as 'card' | 'list' }));
       }
     }
-    // 仅在组件首次挂载时执行
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+      }, []);
   const [filterData, setFilterData] = useState<FaqFiltersResponse>({
     categories: [],
     product_models: [],
@@ -69,7 +67,7 @@ export function FaqProvider({ children, initialFilters }: FaqProviderProps) {
   }, []);
 
   // 获取问题列表
-  const refreshQuestions = async () => {
+  const refreshQuestions = useCallback(async () => {
     setLoading(true);
     try {
       const searchFilters = { ...filters, search: debouncedSearch };
@@ -81,11 +79,11 @@ export function FaqProvider({ children, initialFilters }: FaqProviderProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters, debouncedSearch]);
 
   useEffect(() => {
     refreshQuestions();
-  }, [debouncedSearch, filters.categoryId, filters.productModelId, filters.tagId, filters.hasVideo, filters.sortBy, filters.period]);
+  }, [refreshQuestions]);
 
   // 保存viewMode到localStorage
   useEffect(() => {
@@ -95,7 +93,7 @@ export function FaqProvider({ children, initialFilters }: FaqProviderProps) {
   }, [filters.viewMode]);
 
   // 更新单个筛选条件
-  const updateFilter = (key: keyof FaqFilters, value: any) => {
+  const updateFilter = (key: keyof FaqFilters, value: FaqFilters[keyof FaqFilters]) => {
     setFilters(prev => {
       const newFilters = { ...prev, [key]: value };
       

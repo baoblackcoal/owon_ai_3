@@ -3,11 +3,8 @@
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useFaq } from '@/contexts/FaqContext';
-import { useDebounce } from '@/hooks/useDebounce';
-
 export default function FaqSearch() {
   const { filters, updateFilter } = useFaq();
-  const debouncedSearch = useDebounce(filters.search, 300);
 
   return (
     <div className="w-full transition-all duration-200 ease-in-out">

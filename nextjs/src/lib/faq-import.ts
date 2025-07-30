@@ -619,7 +619,8 @@ export function templateToCsv(template: FaqCsvTemplate): string {
   const headers = template.headers.join(',');
   const rows = template.sampleData.map(row => {
     return template.headers.map(header => {
-      const value = (row as Record<string, string>)[header] || '';
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const value = (row as any)[header] || '';
       // 如果值包含逗号、引号或换行符，需要用引号包围并转义引号
       if (value.includes(',') || value.includes('"') || value.includes('\n')) {
         return `"${value.replace(/"/g, '""')}"`;

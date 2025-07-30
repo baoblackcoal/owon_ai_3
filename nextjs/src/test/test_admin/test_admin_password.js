@@ -1,4 +1,4 @@
-const bcrypt = require('bcryptjs');
+import bcrypt from 'bcryptjs';
 
 // 从数据库获取的哈希值
 const hashFromDB = '$2a$12$PQK6MEos5o4rvg6vtlfuvuUYYNM45UeuVCfIlEfxvoIv68WfWFUM.';

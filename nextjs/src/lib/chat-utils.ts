@@ -51,7 +51,7 @@ export function parseConcatenatedJson(jsonString: string): ParsedJsonObject[] {
         try {
           const parsedObject = JSON.parse(jsonChunk) as ParsedJsonObject;
           jsonObjects.push(parsedObject);
-        } catch (e) {
+        } catch {
           // 忽略解析错误，这可能是因为流尚未完成
           // console.error('JSON解析错误（已忽略）:', e, 'Chunk:', jsonChunk);
         }

@@ -10,9 +10,9 @@ export async function GET(request: NextRequest) {
     // 解析查询参数
     const params: FaqListParams = {
       q: searchParams.get('q') || undefined,
-      category_id: searchParams.get('category_id') || undefined,
-      product_model_id: searchParams.get('product_model_id') || undefined,
-      tag_id: searchParams.get('tag_id') || undefined,
+      category_id: searchParams.get('category_id') ? parseInt(searchParams.get('category_id')!) : undefined,
+      product_model_id: searchParams.get('product_model_id') ? parseInt(searchParams.get('product_model_id')!) : undefined,
+      tag_id: searchParams.get('tag_id') ? parseInt(searchParams.get('tag_id')!) : undefined,
       has_video: searchParams.get('has_video') === 'true' ? true : undefined,
       sort: (searchParams.get('sort') as FaqListParams['sort']) || 'latest',
       period: (searchParams.get('period') as FaqListParams['period']) || 'all',
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
       LEFT JOIN faq_likes l ON q.id = l.question_id AND l.user_id = ?
     `;
 
-    const queryParams: any[] = [userId];
+    const queryParams: (string | number)[] = [userId || 0];
 
     // 添加WHERE条件
     const whereConditions: string[] = [];
@@ -146,7 +146,7 @@ export async function GET(request: NextRequest) {
       ranking: 'q.views_count DESC, q.created_at DESC',
       'my-share': 'q.created_at DESC',
     };
-    baseQuery += ` ORDER BY ${sortMap[params.sort]}`;
+    baseQuery += ` ORDER BY ${sortMap[params.sort as keyof typeof sortMap]}`;
 
     // 添加限制
     const limit = params.limit || 20;
@@ -154,41 +154,78 @@ export async function GET(request: NextRequest) {
 
     // 执行查询
     const result = await env.DB.prepare(baseQuery).bind(...queryParams).all();
-    const questions = result.results || [];
+    const questions = (result.results as Array<{
+      id: number;
+      title: string;
+      content: string;
+      answer: string;
+      category_id: number;
+      product_model_id: number;
+      software_version: string;
+      views_count: number;
+      likes_count: number;
+      created_by: number;
+      created_at: string;
+      updated_at: string;
+      video_bilibili_bvid: string;
+      has_video: number;
+      is_liked: number;
+      category_name?: string;
+      product_model_name?: string;
+    }>) || [];
 
     // 处理分页
     let nextCursor: string | undefined;
     if (questions.length > limit) {
       const lastItem = questions.pop();
-      nextCursor = (lastItem as any)?.created_at;
+      nextCursor = (lastItem as { created_at: string })?.created_at;
     }
 
     // 获取每个问题的标签
-    const questionIds = questions.map((q: any) => q.id);
-    let tagsMap: Record<string, any[]> = {};
+    const questionIds = questions.map((q) => q.id);
+    const tagsMap: Record<string, { id: number; name: string; created_at: string }[]> = {};
 
     if (questionIds.length > 0) {
       const tagsQuery = `
-        SELECT qt.question_id, t.id, t.name
+        SELECT qt.question_id, t.id, t.name, t.created_at
         FROM faq_question_tags qt
         INNER JOIN faq_tags t ON qt.tag_id = t.id
         WHERE qt.question_id IN (${questionIds.map(() => '?').join(',')})
       `;
       const tagsResult = await env.DB.prepare(tagsQuery).bind(...questionIds).all();
       
-      (tagsResult.results || []).forEach((tag: any) => {
+      (tagsResult.results as Array<{ question_id: number; id: number; name: string; created_at: string }> || []).forEach((tag) => {
         if (!tagsMap[tag.question_id]) {
           tagsMap[tag.question_id] = [];
         }
         tagsMap[tag.question_id].push({
           id: tag.id,
           name: tag.name,
+          created_at: tag.created_at,
         });
       });
     }
 
     // 格式化响应数据
-    const formattedQuestions = questions.map((q: any) => ({
+    const formattedQuestions = questions.map((q: { 
+      id: number; 
+      title: string; 
+      content: string; 
+      answer: string; 
+      category_id: number; 
+      product_model_id: number; 
+      software_version: string; 
+      views_count: number; 
+      likes_count: number; 
+      created_by: number; 
+      created_at: string; 
+      updated_at: string; 
+      video_bilibili_bvid: string; 
+      has_video: number; 
+      is_liked: number; 
+      category_name?: string; 
+      product_model_name?: string; 
+    }) => ({
       id: q.id,
       title: q.title,
       content: q.content,

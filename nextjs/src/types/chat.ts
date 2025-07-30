@@ -12,7 +12,7 @@ export interface DashScopeThought {
   action_input_stream?: string; // rag时有，reasoning时无
   arguments?: string; // rag时有，reasoning时无
   action_type: string; // agentRag 或 reasoning
-  observation?: string; // rag时有，reasoning时无
+  observation?: string | RagObservation[]; // rag时有，reasoning时无
   action_name: string; // rag: 知识检索，reasoning: 思考过程
   // reasoning类型特有字段
   thought?: string; // reasoning时有
@@ -33,6 +33,7 @@ export interface DashScopeOutput {
   finish_reason: string | null;
   text: string;
   reject_status: boolean;
+  doc_references?: DocReference[];
 }
 
 export interface DashScopeResponse {
@@ -49,6 +50,24 @@ export interface MetadataResponse {
 }
 
 export type ParsedJsonObject = DashScopeResponse | MetadataResponse;
+
+export interface ParsedStreamData {
+  type: 'data' | 'error';
+  content: ParsedJsonObject | null;
+  rawData: string;
+}
+
+export interface RagObservation {
+  content: string;
+  score: number;
+  metadata?: Record<string, unknown>;
+}
+
+export interface DocReference {
+  title: string;
+  url: string;
+  content: string;
+}
 
 export interface ChatContextType {
   messages: Message[];

@@ -1,36 +1,36 @@
 // FAQ 常见问答集相关类型定义
 
 export interface FaqCategory {
-  id: string;
+  id: number;
   name: string;
   description?: string;
   created_at: string;
 }
 
 export interface FaqProductModel {
-  id: string;
-  category_id?: string;
+  id: number;
+  category_id?: number;
   name: string;
   created_at: string;
 }
 
 export interface FaqTag {
-  id: string;
+  id: number;
   name: string;
   created_at: string;
 }
 
 export interface FaqQuestion {
-  id: string;
+  id: number;
   title: string;
   content: string;
   answer: string; // Markdown 格式的官方答案
-  category_id?: string;
-  product_model_id?: string;
+  category_id?: number;
+  product_model_id?: number;
   software_version?: string;
   views_count: number;
   likes_count: number;
-  created_by?: string;
+  created_by?: number;
   created_at: string;
   updated_at: string;
   // 视频支持
@@ -44,18 +44,18 @@ export interface FaqQuestion {
 }
 
 export interface FaqLike {
-  id: string;
-  user_id: string;
-  question_id: string; // 现在只支持对问题点赞
+  id: number;
+  user_id: number;
+  question_id: number; // 现在只支持对问题点赞
   created_at: string;
 }
 
 // API 请求/响应类型
 export interface FaqListParams {
   q?: string; // 搜索关键词
-  category_id?: string;
-  product_model_id?: string;
-  tag_id?: string;
+  category_id?: number;
+  product_model_id?: number;
+  tag_id?: number;
   has_video?: boolean; // 仅显示有视频的问题
   sort?: 'latest' | 'best' | 'ranking' | 'my-share';
   period?: 'week' | 'month' | 'quarter' | 'year' | 'all';
@@ -87,9 +87,9 @@ export interface FaqLikeRequest {
 // 前端 UI 相关类型
 export interface FaqFilters {
   search: string;
-  categoryId?: string;
-  productModelId?: string;
-  tagId?: string;
+  categoryId?: number;
+  productModelId?: number;
+  tagId?: number;
   hasVideo?: boolean; // 仅显示有视频的问题
   sortBy: 'latest' | 'best' | 'ranking' | 'my-share';
   period: 'week' | 'month' | 'quarter' | 'year' | 'all';
@@ -104,8 +104,8 @@ export interface FaqViewMode {
 export interface FaqCardProps {
   question: FaqQuestion;
   viewMode: 'list' | 'card';
-  onLike?: (questionId: string) => void;
-  onClick?: (questionId: string) => void;
+  onLike?: (questionId: number) => void;
+  onClick?: (questionId: number) => void;
 }
 
 export interface FaqSearchBarProps {

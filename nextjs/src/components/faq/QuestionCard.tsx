@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Heart, Eye, MessageSquare, Clock } from 'lucide-react';
+import { Heart, Eye, Clock } from 'lucide-react';
 import { FaqCardProps } from '@/types/faq';
 import { formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';

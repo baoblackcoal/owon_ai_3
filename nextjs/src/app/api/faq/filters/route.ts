@@ -1,8 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { FaqFiltersResponse } from '@/types/faq';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 
-export async function GET(request: NextRequest) {
+type FaqCategoryRow = { id: number; name: string; description: string; created_at: string };
+type FaqProductModelRow = { id: number; category_id: number | null; name: string; created_at: string };
+type FaqTagRow = { id: number; name: string; created_at: string; question_count: number };
+
+export async function GET() {
   try {
     const { env } = await getCloudflareContext();
 
@@ -13,7 +17,7 @@ export async function GET(request: NextRequest) {
       ORDER BY name ASC
     `;
     const categoriesResult = await env.DB.prepare(categoriesQuery).all();
-    const categories = (categoriesResult.results || []).map((c: any) => ({
+    const categories = (categoriesResult.results as FaqCategoryRow[] || []).map((c) => ({
       id: c.id,
       name: c.name,
       description: c.description,
@@ -27,9 +31,9 @@ export async function GET(request: NextRequest) {
       ORDER BY pm.name ASC
     `;
     const modelsResult = await env.DB.prepare(modelsQuery).all();
-    const product_models = (modelsResult.results || []).map((pm: any) => ({
+    const product_models = (modelsResult.results as FaqProductModelRow[] || []).map((pm) => ({
       id: pm.id,
-      category_id: pm.category_id,
+      category_id: pm.category_id ?? undefined,
       name: pm.name,
       created_at: pm.created_at,
     }));
@@ -48,7 +52,7 @@ export async function GET(request: NextRequest) {
       ORDER BY question_count DESC, t.name ASC
     `;
     const tagsResult = await env.DB.prepare(tagsQuery).all();
-    const tags = (tagsResult.results || []).map((t: any) => ({
+    const tags = (tagsResult.results as FaqTagRow[] || []).map((t) => ({
       id: t.id,
       name: t.name,
       created_at: t.created_at,

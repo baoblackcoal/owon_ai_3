@@ -5,7 +5,7 @@ import { verifyOrigin, verifyMethod } from '@/lib/security';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // 验证请求方法和Origin
@@ -23,7 +23,7 @@ export async function POST(
     }
 
     const { env } = await getCloudflareContext();
-    const { id } = params;
+    const { id } = await params;
 
     // 使用事务确保数据一致性
     try {

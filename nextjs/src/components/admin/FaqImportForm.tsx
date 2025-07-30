@@ -63,7 +63,7 @@ export default function FaqImportForm({ onImportComplete }: FaqImportFormProps) 
       const response = await fetch('/api/admin/faq/template');
       
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json() as { error?: string };
         throw new Error(errorData.error || '下载模板失败');
       }
       

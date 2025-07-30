@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useUI } from '@/contexts/UIContext';
 import { useChatContext } from '@/contexts/ChatContext';
-import { ChevronLeft, ChevronRight, X, Plus, Headphones, MessageSquare, HelpCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Plus, Headphones, HelpCircle } from 'lucide-react';
 import { TooltipProvider } from '@radix-ui/react-tooltip';
 import { ActionTooltip } from './ui/ActionTooltip';
 import ServiceDialog from './ServiceDialog';
@@ -27,7 +27,7 @@ interface ChatSidebarProps {
   onNewChat?: () => void;
 }
 
-export default function ChatSidebar({ currentChatId, onChatSelect, onNewChat }: ChatSidebarProps) {
+export default function ChatSidebar({ currentChatId, onNewChat }: ChatSidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { data: session, status } = useSession();

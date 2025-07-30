@@ -26,7 +26,7 @@ import { useFaq } from '@/contexts/FaqContext';
 import { hasActiveFilters } from '@/lib/faq-utils';
 
 export default function FaqFilters() {
-  const { filters, filterData, questions, updateFilter, clearAllFilters } = useFaq();
+  const { filters, filterData, updateFilter, clearAllFilters } = useFaq();
   // 移动端和桌面端各自维护 Popover 打开状态，避免受隐藏元素影响
   const [tagSearchOpenMobile, setTagSearchOpenMobile] = useState(false);
   const [tagSearchOpenDesktop, setTagSearchOpenDesktop] = useState(false);
@@ -267,7 +267,7 @@ export default function FaqFilters() {
           <div className="flex gap-1">
             <Tabs 
               value={filters.sortBy} 
-              onValueChange={(value) => updateFilter('sortBy', value as any)} 
+              onValueChange={(value) => updateFilter('sortBy', value as 'latest' | 'best' | 'ranking' | 'my-share')} 
               className="flex-1"
             >
               <TabsList className="grid grid-cols-3 h-8 text-xs gap-2" id="faq-filters-sort-by">

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Eye, ThumbsUp, Copy, Video } from 'lucide-react';
+import { Loader2, Eye, ThumbsUp, Copy } from 'lucide-react';
 import type { FaqQuestion, FaqDetailResponse } from '@/types/faq';
 import { useUI } from '@/contexts/UIContext';
 import { marked } from 'marked';
@@ -48,8 +48,8 @@ export default function FaqDetailPage() {
           ...data.question,
           related_questions: data.related_questions,
         });
-      } catch (err) {
-        setError(err instanceof Error ? err.message : '加载失败');
+      } catch {
+        setError('加载失败');
       } finally {
         setLoading(false);
       }
@@ -146,7 +146,7 @@ export default function FaqDetailPage() {
       
       await navigator.clipboard.writeText(plainText);
       toast.success('答案已复制到剪贴板');
-    } catch (err) {
+    } catch {
       toast.error('复制失败，请手动选择复制');
     } finally {
       setCopying(false);

@@ -1,4 +1,4 @@
-const bcrypt = require('bcryptjs');
+import bcrypt from 'bcryptjs';
 
 // 生成admin密码的哈希值
 const password = 'admin';

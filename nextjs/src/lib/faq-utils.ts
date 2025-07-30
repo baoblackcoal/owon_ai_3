@@ -7,9 +7,9 @@ export function buildFaqQueryParams(filters: FaqFilters): URLSearchParams {
   const params = new URLSearchParams();
   
   if (filters.search) params.set('q', filters.search);
-  if (filters.categoryId) params.set('category_id', filters.categoryId);
-  if (filters.productModelId) params.set('product_model_id', filters.productModelId);
-  if (filters.tagId) params.set('tag_id', filters.tagId);
+  if (filters.categoryId) params.set('category_id', filters.categoryId.toString());
+  if (filters.productModelId) params.set('product_model_id', filters.productModelId.toString());
+  if (filters.tagId) params.set('tag_id', filters.tagId.toString());
   if (filters.hasVideo) params.set('has_video', 'true');
   params.set('sort', filters.sortBy);
   if (filters.sortBy === 'ranking') params.set('period', filters.period);
@@ -75,12 +75,12 @@ export function initFiltersFromParams(searchParams: URLSearchParams): FaqFilters
   // 注意：不可在此直接访问 localStorage，否则会导致服务端与客户端初始渲染不一致（hydration mismatch）
   return {
     search: searchParams.get('q') || '',
-    categoryId: searchParams.get('category_id') || undefined,
-    productModelId: searchParams.get('product_model_id') || undefined,
-    tagId: searchParams.get('tag_id') || undefined,
+    categoryId: searchParams.get('category_id') ? parseInt(searchParams.get('category_id')!) : undefined,
+    productModelId: searchParams.get('product_model_id') ? parseInt(searchParams.get('product_model_id')!) : undefined,
+    tagId: searchParams.get('tag_id') ? parseInt(searchParams.get('tag_id')!) : undefined,
     hasVideo: searchParams.get('has_video') === 'true' ? true : undefined,
-    sortBy: (searchParams.get('sort') as any) || 'latest',
-    period: (searchParams.get('period') as any) || 'all',
+    sortBy: (searchParams.get('sort') as 'latest' | 'best' | 'ranking' | 'my-share') || 'latest',
+    period: (searchParams.get('period') as 'week' | 'month' | 'quarter' | 'year' | 'all') || 'all',
     viewMode: 'card' // 统一默认视图，后续在客户端再根据 localStorage 调整
   };
 } 

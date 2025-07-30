@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { Search } from 'lucide-react';
 import { FaqProvider, useFaq } from '@/contexts/FaqContext';
 import { initFiltersFromParams } from '@/lib/faq-utils';
@@ -59,7 +59,7 @@ function FaqPageContent() {
   );
 }
 
-export default function FaqPage() {
+function FaqPageWithParams() {
   const searchParams = useSearchParams();
   const initialFilters = initFiltersFromParams(searchParams);
 
@@ -67,5 +67,13 @@ export default function FaqPage() {
     <FaqProvider initialFilters={initialFilters}>
       <FaqPageContent />
     </FaqProvider>
+  );
+}
+
+export default function FaqPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-64">加载中...</div>}>
+      <FaqPageWithParams />
+    </Suspense>
   );
 } 

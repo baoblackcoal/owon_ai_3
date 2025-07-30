@@ -1,6 +1,6 @@
 'use client';
 
-import { Card } from "@/components/ui/card";
+
 import { useState } from "react";
 
 interface BilibiliVideoProps {

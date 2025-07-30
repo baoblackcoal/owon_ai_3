@@ -1,4 +1,7 @@
-import { marked } from 'marked';
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css'; 
 import { Message } from '@/types/chat';
 import { MessageActionBar } from './MessageActionBar';
 import { useUI } from '@/contexts/UIContext';
@@ -27,6 +30,10 @@ export function ChatMessage({ message, index, isLoading, onFeedbackChange }: Cha
     </div>
   );
 
+  const rehypePlugins = [
+    [rehypeKatex, { throwOnError: false }]
+  ];
+
   return (
     <div className={`
       flex items-start gap-3 message-enter
@@ -52,7 +59,14 @@ export function ChatMessage({ message, index, isLoading, onFeedbackChange }: Cha
           {isAssistant && message.thought && (
             <details className="mt-2 text-xs text-muted-foreground pb-4" open>
               <summary className="cursor-pointer select-none ">深度思考</summary>
-              <div className="mt-1 whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: message.thought }} />
+              <div className="mt-1 whitespace-pre-wrap">
+                <ReactMarkdown
+                  remarkPlugins={[remarkMath]}
+                  rehypePlugins={rehypePlugins}
+                >
+                  {message.thought}
+                </ReactMarkdown>
+              </div>
             </details>
           )}
 
@@ -65,8 +79,14 @@ export function ChatMessage({ message, index, isLoading, onFeedbackChange }: Cha
                 prose-code:bg-muted/50 prose-code:px-1 prose-code:py-0.5 prose-code:rounded
                 prose-pre:bg-muted/50 prose-pre:border
               `}
-              dangerouslySetInnerHTML={{ __html: marked(message.content) }} 
-            />
+            >
+              <ReactMarkdown
+                remarkPlugins={[remarkMath]}
+                rehypePlugins={rehypePlugins}
+              >
+                {message.content}
+              </ReactMarkdown>
+            </div>
           ) : (
             isAssistant && isLoading ? (
               <div className="text-muted-foreground">
@@ -95,4 +115,5 @@ export function ChatMessage({ message, index, isLoading, onFeedbackChange }: Cha
       </div>
     </div>
   );
-} 
+}
+ 

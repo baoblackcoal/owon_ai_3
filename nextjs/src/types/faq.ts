@@ -130,3 +130,58 @@ export interface FaqSortTabsProps {
   onPeriodChange: (period: FaqFilters['period']) => void;
   showPeriod: boolean;
 } 
+
+// CSV 批量导入相关类型
+export interface FaqCsvRow {
+  title: string;
+  content_md: string;
+  answer_md: string;
+  category: string;
+  product_model?: string;
+  tags?: string; // 逗号分隔的标签名称
+  software_version?: string;
+  bilibili_bvid?: string; // Bilibili视频BVID
+}
+
+export interface FaqImportError {
+  row: number; // 行号（从1开始）
+  field?: string; // 出错的字段名
+  message: string; // 错误描述
+  data?: FaqCsvRow; // 原始数据
+}
+
+export interface FaqImportResult {
+  successCount: number;
+  errorCount: number;
+  skippedCount: number;
+  errors: FaqImportError[];
+  newCategories: string[]; // 新创建的分类名称
+  newProductModels: string[]; // 新创建的产品型号名称
+  newTags: string[]; // 新创建的标签名称
+}
+
+export interface FaqImportRequest {
+  csvData: string; // CSV文件内容
+  updateExisting?: boolean; // 是否更新已存在的问题（基于title匹配）
+}
+
+export interface FaqImportResponse {
+  success: boolean;
+  message: string;
+  result?: FaqImportResult;
+}
+
+// CSV模板相关
+export interface FaqCsvTemplate {
+  filename: string;
+  headers: string[];
+  sampleData: FaqCsvRow[];
+}
+
+export interface FaqImportStats {
+  totalRows: number;
+  processedRows: number;
+  successRows: number;
+  errorRows: number;
+  isComplete: boolean;
+} 

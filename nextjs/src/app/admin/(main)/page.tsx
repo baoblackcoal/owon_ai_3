@@ -31,6 +31,22 @@ export default function AdminPage() {
 
         <Card>
           <CardHeader>
+            <CardTitle>FAQ 批量导入</CardTitle>
+            <CardDescription>
+              通过 CSV 文件批量导入 FAQ 问答数据，支持视频链接
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/admin/faq-import">
+              <Button className="w-full">
+                批量导入 FAQ
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>用户管理</CardTitle>
             <CardDescription>
               管理系统用户、查看用户统计信息
@@ -76,13 +92,30 @@ export default function AdminPage() {
                 </div>
               </div>
               <div>
+                <h3 className="font-medium mb-2">内容管理</h3>
+                <div className="space-y-2">
+                  <Link href="/admin/faq-import">
+                    <Button variant="outline" size="sm" className="w-full justify-start">
+                      导入 FAQ 数据
+                    </Button>
+                  </Link>
+                  <Link href="/faq">
+                    <Button variant="outline" size="sm" className="w-full justify-start">
+                      查看 FAQ 页面
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
                 <h3 className="font-medium mb-2">账户管理</h3>
                 <div className="space-y-2">
-                                     <Link href="/admin/change-password">
-                     <Button variant="outline" size="sm" className="w-full justify-start">
-                       修改密码
-                     </Button>
-                   </Link>
+                  <Link href="/admin/change-password">
+                    <Button variant="outline" size="sm" className="w-full justify-start">
+                      修改密码
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </div>

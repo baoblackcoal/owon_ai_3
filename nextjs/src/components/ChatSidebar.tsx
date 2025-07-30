@@ -34,7 +34,7 @@ export default function ChatSidebar({ currentChatId, onChatSelect, onNewChat }: 
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [showServiceDialog, setShowServiceDialog] = useState(false);
-  const { setHistoryRefreshCallback } = useChatContext();
+  const { setHistoryRefreshCallback, handleNewChat, handleChatSelect } = useChatContext();
   
   const { 
     sidebarCollapsed, 
@@ -122,18 +122,16 @@ export default function ChatSidebar({ currentChatId, onChatSelect, onNewChat }: 
   };
 
   const handleChatSelectAndCloseMobile = (chatId: string) => {
-    if (onChatSelect) {
-      onChatSelect(chatId);
-    }
+    // 使用 ChatContext 中的 handleChatSelect
+    handleChatSelect(chatId);
     if (deviceType === 'mobile') {
       setMobileSidebarOpen(false);
     }
   };
 
   const handleNewChatAndCloseMobile = () => {
-    if (onNewChat) {
-      onNewChat();
-    }
+    // 使用 ChatContext 中的 handleNewChat
+    handleNewChat();
     if (deviceType === 'mobile') {
       setMobileSidebarOpen(false);
     }
@@ -218,8 +216,8 @@ export default function ChatSidebar({ currentChatId, onChatSelect, onNewChat }: 
           chatSessions={chatSessions}
           currentChatId={currentChatId}
           sidebarCollapsed={sidebarCollapsed}
-          onNewChat={onNewChat || (() => {})}
-          onChatSelect={onChatSelect || (() => {})}
+          onNewChat={handleNewChat}
+          onChatSelect={handleChatSelect}
           onDeleteChat={handleDeleteChat}
           formatTime={formatTime}
           toggleSidebar={toggleSidebar}

@@ -50,9 +50,9 @@ export function ChatMessage({ message, index, isLoading, onFeedbackChange }: Cha
           
           {/* 深度思考 - reasoning */}
           {isAssistant && message.thought && (
-            <details className="mt-2 text-xs text-muted-foreground">
-              <summary className="cursor-pointer select-none">深度思考</summary>
-              <div className="mt-1 whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: marked(message.thought) }} />
+            <details className="mt-2 text-xs text-muted-foreground pb-4" open>
+              <summary className="cursor-pointer select-none ">深度思考</summary>
+              <div className="mt-1 whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: message.thought }} />
             </details>
           )}
 

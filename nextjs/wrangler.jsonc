@@ -24,8 +24,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "test_d1",
-      "database_id": "eea7e024-6b3f-4679-8bf3-64d548a0cb62",
+      "database_name": "owonai",
+      "database_id": "8dbd8419-d4db-49af-97e7-76debd731bf0",
       "migrations_dir": "src/sql"
     }
   ]

@@ -23,6 +23,6 @@
     },
     "types": ["./env.d.ts", "node"]
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/app/test/chat/page.tsx0", "src/app/test/d1/page.tsx0", "src/app/test/d1_all/page.tsx0"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/app/test/d1_all/page.tsx0"],
   "exclude": ["node_modules"]
 }

@@ -90,6 +90,14 @@ echo 7. Creating FAQ tables...
 call npx wrangler d1 execute DB %REMOTE_FLAG% --file "src/sql/0007_create_faq_tables.sql"
 if %ERRORLEVEL% neq 0 goto :error
 
+echo 8. Adding video support...
+call npx wrangler d1 execute DB %REMOTE_FLAG% --file "src/sql/0008_add_video_support.sql"
+if %ERRORLEVEL% neq 0 goto :error
+
+echo 9. Adding admin role...
+call npx wrangler d1 execute DB %REMOTE_FLAG% --file "src/sql/0009_add_admin_role.sql"
+if %ERRORLEVEL% neq 0 goto :error
+
 echo.
 echo Database cleanup and recreation completed successfully!
 pause

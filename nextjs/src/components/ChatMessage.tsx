@@ -1,5 +1,6 @@
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
+import remarkGfm from 'remark-gfm';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css'; 
 import { Message } from '@/types/chat';
@@ -60,12 +61,12 @@ export function ChatMessage({ message, index, isLoading, onFeedbackChange }: Cha
             <details className="mt-2 text-xs text-muted-foreground pb-4" open>
               <summary className="cursor-pointer select-none ">深度思考</summary>
               <div className="mt-1 whitespace-pre-wrap">
-                <ReactMarkdown
-                  remarkPlugins={[remarkMath]}
-                  rehypePlugins={rehypePlugins}
-                >
-                  {message.thought}
-                </ReactMarkdown>
+                              <ReactMarkdown
+                remarkPlugins={[remarkMath, remarkGfm]}
+                rehypePlugins={rehypePlugins}
+              >
+                {message.thought}
+              </ReactMarkdown>
               </div>
             </details>
           )}
@@ -73,15 +74,15 @@ export function ChatMessage({ message, index, isLoading, onFeedbackChange }: Cha
           {message.content ? (
             <div 
               className={`
-                prose prose-sm max-w-none
                 ${isUser ? 'prose-invert' : 'dark:prose-invert  [&_p]:mb-2'}
-                prose-p:leading-relaxed
-                prose-code:bg-muted/50 prose-code:px-1 prose-code:py-0.5 prose-code:rounded
-                prose-pre:bg-muted/50 prose-pre:border
+
+                [&_table]:border-collapse [&_table]:w-full [&_table]:border [&_table]:border-border
+                [&_th]:border [&_th]:border-border [&_th]:p-2 [&_th]:text-left [&_th]:font-semibold [&_th]:bg-muted/30
+                [&_td]:border [&_td]:border-border [&_td]:p-2
               `}
             >
               <ReactMarkdown
-                remarkPlugins={[remarkMath]}
+                remarkPlugins={[remarkMath, remarkGfm]}
                 rehypePlugins={rehypePlugins}
               >
                 {message.content}

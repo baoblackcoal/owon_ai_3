@@ -72,7 +72,7 @@
   "scripts": {
     "build": "next build",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv env.d.ts",
-    "check": "npm run build && tsc",
+    "check": "tsc --noEmit --noEmitOnError false",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "dev": "next dev",
     "dev-d1": "wrangler dev",

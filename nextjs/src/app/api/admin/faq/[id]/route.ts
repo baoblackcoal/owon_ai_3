@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { getCloudflareContext } from '@/lib/env';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 import type { FaqDeleteResponse } from '@/types/faq';
 
 // 数据库类型定义
@@ -12,7 +12,7 @@ interface D1PreparedStatement {
   bind(...values: unknown[]): D1PreparedStatement;
   first(): Promise<Record<string, unknown> | null>;
   all(): Promise<{ results: Record<string, unknown>[] }>;
-  run(): Promise<{ meta: { last_row_id: string } }>;
+  run(): Promise<{ meta: { last_row_id: number } }>;
 }
 
 // GET: 获取单个FAQ详情
@@ -28,8 +28,17 @@ export async function GET(
     }
 
     const { env } = await getCloudflareContext();
-    const db = env.DB as D1Database;
+    const db = (env as unknown as { DB?: D1Database }).DB;
     const { id } = await params;
+
+    // 检查数据库连接
+    if (!db) {
+      console.error('数据库连接失败: DB not found in env');
+      return NextResponse.json(
+        { error: '数据库连接失败' },
+        { status: 500 }
+      );
+    }
 
     // 查询FAQ详情
     const query = `
@@ -122,8 +131,17 @@ export async function DELETE(
     }
 
     const { env } = await getCloudflareContext();
-    const db = env.DB as D1Database;
+    const db = (env as unknown as { DB?: D1Database }).DB;
     const { id } = await params;
+
+    // 检查数据库连接
+    if (!db) {
+      console.error('数据库连接失败: DB not found in env');
+      return NextResponse.json(
+        { error: '数据库连接失败' },
+        { status: 500 }
+      );
+    }
 
     // 检查FAQ是否存在
     const existingFaq = await db.prepare('SELECT id FROM faq_questions WHERE id = ?').bind(id).first();

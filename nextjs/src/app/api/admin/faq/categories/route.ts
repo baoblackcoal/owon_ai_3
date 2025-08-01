@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { getCloudflareContext } from '@/lib/env';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 
 // 数据库类型定义
 interface D1Database {
@@ -11,7 +11,7 @@ interface D1PreparedStatement {
   bind(...values: unknown[]): D1PreparedStatement;
   first(): Promise<Record<string, unknown> | null>;
   all(): Promise<{ results: Record<string, unknown>[] }>;
-  run(): Promise<{ meta: { last_row_id: string } }>;
+  run(): Promise<{ meta: { last_row_id: number } }>;
 }
 
 // GET: 获取所有分类
@@ -24,7 +24,16 @@ export async function GET() {
     }
 
     const { env } = await getCloudflareContext();
-    const db = env.DB as D1Database;
+    const db = (env as unknown as { DB?: D1Database }).DB;
+
+    // 检查数据库连接
+    if (!db) {
+      console.error('数据库连接失败: DB not found in env');
+      return NextResponse.json(
+        { error: '数据库连接失败' },
+        { status: 500 }
+      );
+    }
 
     const query = `
       SELECT id, name, description, created_at
@@ -60,10 +69,20 @@ export async function POST(request: NextRequest) {
     }
 
     const { env } = await getCloudflareContext();
-    const db = env.DB as D1Database;
+    const db = (env as unknown as { DB?: D1Database }).DB;
+
+    // 检查数据库连接
+    if (!db) {
+      console.error('数据库连接失败: DB not found in env');
+      return NextResponse.json(
+        { error: '数据库连接失败' },
+        { status: 500 }
+      );
+    }
+
     const body = await request.json();
 
-    const { name, description } = body;
+    const { name, description } = body as { name?: string; description?: string };
 
     if (!name?.trim()) {
       return NextResponse.json(
@@ -88,7 +107,7 @@ export async function POST(request: NextRequest) {
     `).bind(name.trim(), description?.trim() || null).run();
 
     const newCategory = {
-      id: result.meta.last_row_id,
+      id: result.meta.last_row_id.toString(),
       name: name.trim(),
       description: description?.trim() || null,
       created_at: new Date().toISOString()

@@ -84,17 +84,17 @@ export default function FaqEditor({ faq, onSave, onCancel }: FaqEditorProps) {
       ]);
 
       if (categoriesRes.ok) {
-        const categoriesData = await categoriesRes.json();
+        const categoriesData = await categoriesRes.json() as { categories?: FaqCategory[] };
         setCategories(categoriesData.categories || []);
       }
 
       if (productModelsRes.ok) {
-        const productModelsData = await productModelsRes.json();
+        const productModelsData = await productModelsRes.json() as { product_models?: FaqProductModel[] };
         setProductModels(productModelsData.product_models || []);
       }
 
       if (tagsRes.ok) {
-        const tagsData = await tagsRes.json();
+        const tagsData = await tagsRes.json() as { tags?: FaqTag[] };
         setTags(tagsData.tags || []);
       }
     } catch (error) {
@@ -147,7 +147,7 @@ export default function FaqEditor({ faq, onSave, onCancel }: FaqEditorProps) {
       });
 
       if (response.ok) {
-        const data = await response.json();
+        const data = await response.json() as { category: FaqCategory };
         setCategories(prev => [...prev, data.category]);
         setFormData(prev => ({ ...prev, category_id: data.category.id }));
         setNewCategory('');
@@ -171,7 +171,7 @@ export default function FaqEditor({ faq, onSave, onCancel }: FaqEditorProps) {
       });
 
       if (response.ok) {
-        const data = await response.json();
+        const data = await response.json() as { product_model: FaqProductModel };
         setProductModels(prev => [...prev, data.product_model]);
         setFormData(prev => ({ ...prev, product_model_id: data.product_model.id }));
         setNewProductModel('');
@@ -192,7 +192,7 @@ export default function FaqEditor({ faq, onSave, onCancel }: FaqEditorProps) {
       });
 
       if (response.ok) {
-        const data = await response.json();
+        const data = await response.json() as { tag: FaqTag };
         setTags(prev => [...prev, data.tag]);
         handleAddTag();
       }

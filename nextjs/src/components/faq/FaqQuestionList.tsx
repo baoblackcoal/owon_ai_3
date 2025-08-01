@@ -11,7 +11,7 @@ export default function FaqQuestionList() {
   const { questions, loading, filters, saveScrollPosition } = useFaq();
   const router = useRouter();
 
-  const handleQuestionClick = (questionId: number) => {
+  const handleQuestionClick = (questionId: string) => {
     // 在导航前保存滚动位置
     saveScrollPosition();
     // 使用原始ID，因为数据库中的ID已经是正确的格式

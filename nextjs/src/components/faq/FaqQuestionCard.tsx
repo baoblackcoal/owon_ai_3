@@ -8,7 +8,7 @@ import BilibiliVideo from '@/components/BilibiliVideo';
 
 interface FaqQuestionCardProps {
   question: FaqQuestion;
-  onClick: (questionId: number) => void;
+  onClick: (questionId: string) => void;
 }
 
 export default function FaqQuestionCard({ question, onClick }: FaqQuestionCardProps) {

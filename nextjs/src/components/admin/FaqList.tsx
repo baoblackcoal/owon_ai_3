@@ -42,7 +42,7 @@ export default function FaqList({ onEditFaq, selectedFaqId }: FaqListProps) {
       setLoading(true);
       const response = await fetch('/api/admin/faq');
       if (response.ok) {
-        const data = await response.json();
+        const data = await response.json() as { faqs?: FaqQuestion[] };
         setFaqs(data.faqs || []);
       } else {
         console.error('加载FAQ失败');

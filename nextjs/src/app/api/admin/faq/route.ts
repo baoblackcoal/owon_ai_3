@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { getCloudflareContext } from '@/lib/env';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 import type { FaqSaveResponse } from '@/types/faq';
 
 // 数据库类型定义
@@ -12,7 +12,7 @@ interface D1PreparedStatement {
   bind(...values: unknown[]): D1PreparedStatement;
   first(): Promise<Record<string, unknown> | null>;
   all(): Promise<{ results: Record<string, unknown>[] }>;
-  run(): Promise<{ meta: { last_row_id: string } }>;
+  run(): Promise<{ meta: { last_row_id: number } }>;
 }
 
 // GET: 获取FAQ列表
@@ -25,7 +25,16 @@ export async function GET() {
     }
 
     const { env } = await getCloudflareContext();
-    const db = env.DB as D1Database;
+    const db = (env as unknown as { DB?: D1Database }).DB;
+
+    // 检查数据库连接
+    if (!db) {
+      console.error('数据库连接失败: DB not found in env');
+      return NextResponse.json(
+        { error: '数据库连接失败' },
+        { status: 500 }
+      );
+    }
 
     // 构建查询
     const query = `
@@ -99,7 +108,17 @@ export async function POST(request: NextRequest) {
     }
 
     const { env } = await getCloudflareContext();
-    const db = env.DB as D1Database;
+    const db = (env as unknown as { DB?: D1Database }).DB;
+
+    // 检查数据库连接
+    if (!db) {
+      console.error('数据库连接失败: DB not found in env');
+      return NextResponse.json(
+        { error: '数据库连接失败' },
+        { status: 500 }
+      );
+    }
+
     const body = await request.json();
 
     const {
@@ -112,7 +131,17 @@ export async function POST(request: NextRequest) {
       software_version,
       video_bilibili_bvid,
       tags = []
-    } = body;
+    } = body as {
+      id?: string;
+      title?: string;
+      content?: string;
+      answer?: string;
+      category_id?: string;
+      product_model_id?: string;
+      software_version?: string;
+      video_bilibili_bvid?: string;
+      tags?: string[];
+    };
 
     // 验证必填字段
     if (!title?.trim() || !content?.trim() || !answer?.trim()) {
@@ -184,7 +213,7 @@ export async function POST(request: NextRequest) {
         userId
       ).run();
 
-      const newId = result.meta.last_row_id;
+      const newId = result.meta.last_row_id.toString();
 
       // 创建标签关联
       await updateFaqTags(db, newId, tags);
@@ -215,13 +244,14 @@ async function updateFaqTags(db: D1Database, faqId: string, tags: string[]) {
     if (!tagName.trim()) continue;
 
     // 查找或创建标签
-    let tagId = await db.prepare('SELECT id FROM faq_tags WHERE name = ?').bind(tagName.trim()).first();
+    const existingTag = await db.prepare('SELECT id FROM faq_tags WHERE name = ?').bind(tagName.trim()).first();
+    let tagId: string;
     
-    if (!tagId) {
+    if (!existingTag) {
       const result = await db.prepare('INSERT INTO faq_tags (name) VALUES (?)').bind(tagName.trim()).run();
-      tagId = result.meta.last_row_id;
+      tagId = result.meta.last_row_id.toString();
     } else {
-      tagId = tagId.id as string;
+      tagId = existingTag.id as string;
     }
 
     // 创建关联

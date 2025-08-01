@@ -10,9 +10,9 @@ export async function GET(request: NextRequest) {
     // 解析查询参数
     const params: FaqListParams = {
       q: searchParams.get('q') || undefined,
-      category_id: searchParams.get('category_id') ? parseInt(searchParams.get('category_id')!) : undefined,
-      product_model_id: searchParams.get('product_model_id') ? parseInt(searchParams.get('product_model_id')!) : undefined,
-      tag_id: searchParams.get('tag_id') ? parseInt(searchParams.get('tag_id')!) : undefined,
+      category_id: searchParams.get('category_id') || undefined,
+      product_model_id: searchParams.get('product_model_id') || undefined,
+      tag_id: searchParams.get('tag_id') || undefined,
       has_video: searchParams.get('has_video') === 'true' ? true : undefined,
       sort: (searchParams.get('sort') as FaqListParams['sort']) || 'latest',
       period: (searchParams.get('period') as FaqListParams['period']) || 'all',
@@ -226,34 +226,38 @@ export async function GET(request: NextRequest) {
       category_name?: string; 
       product_model_name?: string; 
     }) => ({
-      id: q.id,
+      id: (q.id as unknown) as string,
       title: q.title,
       content: q.content,
       answer: q.answer,
-      category_id: q.category_id,
-      product_model_id: q.product_model_id,
+      category_id: (q.category_id as unknown) as string,
+      product_model_id: (q.product_model_id as unknown) as string,
       software_version: q.software_version,
       views_count: q.views_count,
       likes_count: q.likes_count,
-      created_by: q.created_by,
+      created_by: (q.created_by as unknown) as string,
       created_at: q.created_at,
       updated_at: q.updated_at,
       video_bilibili_bvid: q.video_bilibili_bvid,
       has_video: Boolean(q.has_video),
       is_liked: Boolean(q.is_liked),
       category: q.category_name ? {
-        id: q.category_id,
+        id: (q.category_id as unknown) as string,
         name: q.category_name,
         description: undefined,
         created_at: '',
       } : undefined,
       product_model: q.product_model_name ? {
-        id: q.product_model_id,
+        id: (q.product_model_id as unknown) as string,
         name: q.product_model_name,
-        category_id: q.category_id,
+        category_id: (q.category_id as unknown) as string,
         created_at: '',
       } : undefined,
-      tags: (q.id && tagsMap[q.id]) || [],
+      tags: (q.id && tagsMap[q.id]) ? tagsMap[q.id].map(tag => ({
+        id: (tag.id as unknown) as string,
+        name: tag.name,
+        created_at: tag.created_at,
+      })) : [],
     }));
 
     const response: FaqListResponse = {

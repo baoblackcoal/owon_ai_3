@@ -18,7 +18,7 @@ export async function GET() {
     `;
     const categoriesResult = await env.DB.prepare(categoriesQuery).all();
     const categories = (categoriesResult.results as FaqCategoryRow[] || []).map((c) => ({
-      id: c.id,
+      id: (c.id as unknown) as string,
       name: c.name,
       description: c.description,
       created_at: c.created_at,
@@ -32,8 +32,8 @@ export async function GET() {
     `;
     const modelsResult = await env.DB.prepare(modelsQuery).all();
     const product_models = (modelsResult.results as FaqProductModelRow[] || []).map((pm) => ({
-      id: pm.id,
-      category_id: pm.category_id ?? undefined,
+      id: (pm.id as unknown) as string,
+      category_id: pm.category_id ? (pm.category_id as unknown) as string : undefined,
       name: pm.name,
       created_at: pm.created_at,
     }));
@@ -53,7 +53,7 @@ export async function GET() {
     `;
     const tagsResult = await env.DB.prepare(tagsQuery).all();
     const tags = (tagsResult.results as FaqTagRow[] || []).map((t) => ({
-      id: t.id,
+      id: (t.id as unknown) as string,
       name: t.name,
       created_at: t.created_at,
     }));

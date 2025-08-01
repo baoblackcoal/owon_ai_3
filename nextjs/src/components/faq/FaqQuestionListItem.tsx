@@ -7,7 +7,7 @@ import { formatTime } from '@/lib/faq-utils';
 
 interface FaqQuestionListItemProps {
   question: FaqQuestion;
-  onClick: (questionId: number) => void;
+  onClick: (questionId: string) => void;
 }
 
 export default function FaqQuestionListItem({ question, onClick }: FaqQuestionListItemProps) {

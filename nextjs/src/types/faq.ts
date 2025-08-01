@@ -1,36 +1,36 @@
 // FAQ 常见问答集相关类型定义
 
 export interface FaqCategory {
-  id: number;
+  id: string;
   name: string;
   description?: string;
   created_at: string;
 }
 
 export interface FaqProductModel {
-  id: number;
-  category_id?: number;
+  id: string;
+  category_id?: string;
   name: string;
   created_at: string;
 }
 
 export interface FaqTag {
-  id: number;
+  id: string;
   name: string;
   created_at: string;
 }
 
 export interface FaqQuestion {
-  id: number;
+  id: string;
   title: string;
   content: string;
   answer: string; // Markdown 格式的官方答案
-  category_id?: number;
-  product_model_id?: number;
+  category_id?: string;
+  product_model_id?: string;
   software_version?: string;
   views_count: number;
   likes_count: number;
-  created_by?: number;
+  created_by?: string;
   created_at: string;
   updated_at: string;
   // 视频支持
@@ -44,18 +44,18 @@ export interface FaqQuestion {
 }
 
 export interface FaqLike {
-  id: number;
-  user_id: number;
-  question_id: number; // 现在只支持对问题点赞
+  id: string;
+  user_id: string;
+  question_id: string; // 现在只支持对问题点赞
   created_at: string;
 }
 
 // API 请求/响应类型
 export interface FaqListParams {
   q?: string; // 搜索关键词
-  category_id?: number;
-  product_model_id?: number;
-  tag_id?: number;
+  category_id?: string;
+  product_model_id?: string;
+  tag_id?: string;
   has_video?: boolean; // 仅显示有视频的问题
   sort?: 'latest' | 'best' | 'ranking' | 'my-share';
   period?: 'week' | 'month' | 'quarter' | 'year' | 'all';
@@ -87,9 +87,9 @@ export interface FaqLikeRequest {
 // 前端 UI 相关类型
 export interface FaqFilters {
   search: string;
-  categoryId?: number;
-  productModelId?: number;
-  tagId?: number;
+  categoryId?: string;
+  productModelId?: string;
+  tagId?: string;
   hasVideo?: boolean; // 仅显示有视频的问题
   sortBy: 'latest' | 'best' | 'ranking' | 'my-share';
   period: 'week' | 'month' | 'quarter' | 'year' | 'all';
@@ -100,12 +100,11 @@ export interface FaqViewMode {
   type: 'list' | 'card';
 }
 
-// 组件 Props 类型
 export interface FaqCardProps {
   question: FaqQuestion;
   viewMode: 'list' | 'card';
-  onLike?: (questionId: number) => void;
-  onClick?: (questionId: number) => void;
+  onLike?: (questionId: string) => void;
+  onClick?: (questionId: string) => void;
 }
 
 export interface FaqSearchBarProps {
@@ -129,9 +128,9 @@ export interface FaqSortTabsProps {
   period: FaqFilters['period'];
   onPeriodChange: (period: FaqFilters['period']) => void;
   showPeriod: boolean;
-} 
+}
 
-// CSV 批量导入相关类型
+// CSV 导入相关类型
 export interface FaqCsvRow {
   title: string;
   content_md: string;
@@ -184,4 +183,63 @@ export interface FaqImportStats {
   successRows: number;
   errorRows: number;
   isComplete: boolean;
+}
+
+// FAQ 编辑器相关类型
+export interface FaqEditorData {
+  id?: string;
+  title: string;
+  content: string;
+  answer: string;
+  category_id?: string;
+  product_model_id?: string;
+  software_version?: string;
+  video_bilibili_bvid?: string;
+  tags?: string[]; // 标签名称数组
+}
+
+export interface FaqEditorProps {
+  faq?: FaqQuestion | null;
+  onSave: (data: FaqEditorData) => Promise<void>;
+  onCancel: () => void;
+}
+
+export interface FaqListProps {
+  onEditFaq: (faq: FaqQuestion) => void;
+  selectedFaqId?: string | null;
+}
+
+export interface FaqPreviewProps {
+  data: FaqEditorData;
+  isPreview?: boolean;
+}
+
+// 分类、产品型号、标签管理类型
+export interface FaqCategoryFormData {
+  id?: string;
+  name: string;
+  description?: string;
+}
+
+export interface FaqProductModelFormData {
+  id?: string;
+  name: string;
+  category_id?: string;
+}
+
+export interface FaqTagFormData {
+  id?: string;
+  name: string;
+}
+
+// API 响应类型
+export interface FaqSaveResponse {
+  success: boolean;
+  message: string;
+  faq?: FaqQuestion;
+}
+
+export interface FaqDeleteResponse {
+  success: boolean;
+  message: string;
 } 
